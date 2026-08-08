@@ -1,0 +1,17 @@
+{
+  "name": "longtail-live",
+  "version": "0.1.0",
+  "description": "Real-time remote guide walks — Bangkok pilot",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "livekit-server-sdk": "^2.9.7"
+  }
+}
