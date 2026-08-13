@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12181B">
+<meta name="robots" content="noindex">
+<title>Longtail — Guide</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#12181B;--ink-2:#1B2327;--ink-3:#232C31;--saffron:#E8A33D;--chili:#D2472B;--signal:#46D189;--paper:#EFE7D8;--dim:rgba(239,231,216,.6);--faint:rgba(239,231,216,.32);--line:rgba(239,231,216,.13);}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;height:100%;overscroll-behavior:none;}
+  button{font-family:inherit;color:inherit;border:none;cursor:pointer;}
+  input{font-family:inherit;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  :focus-visible{outline:2px solid var(--saffron);outline-offset:2px;}
+
+  #lobby{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:26px 20px;max-width:440px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+  .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--chili),var(--saffron));display:flex;align-items:center;justify-content:center;font-family:'Big Shoulders Display',sans-serif;font-weight:900;color:var(--ink);font-size:16px;}
+  .brand span{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:20px;letter-spacing:.03em;}
+  .tagpill{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--saffron);border:1px solid rgba(232,163,61,.4);border-radius:999px;padding:4px 9px;letter-spacing:.06em;}
+  h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:32px;line-height:.95;margin-bottom:8px;}
+  .lede{font-size:13.5px;color:var(--dim);line-height:1.6;margin-bottom:20px;}
+
+  label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin:15px 0 7px;}
+  .in{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;color:var(--paper);font-size:15px;}
+  .in:focus{outline:none;border-color:var(--saffron);}
+  .in.small{font-size:12.5px;font-family:'JetBrains Mono',monospace;padding:11px 13px;}
+
+  .btn{width:100%;padding:16px;border-radius:13px;font-weight:700;font-size:15px;margin-top:20px;background:var(--saffron);color:var(--ink);}
+  .btn:disabled{background:var(--ink-3);color:var(--faint);cursor:not-allowed;}
+  .btn.go{background:var(--signal);}
+
+  .share{margin-top:16px;background:rgba(70,209,137,.07);border:1px solid rgba(70,209,137,.3);border-radius:13px;padding:15px;}
+  .share h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:15px;color:var(--signal);margin-bottom:6px;}
+  .share p{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:10px;}
+  .link{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--saffron);word-break:break-all;line-height:1.5;background:var(--ink);border-radius:8px;padding:10px;}
+  .shareBtns{display:flex;gap:8px;margin-top:9px;}
+  .shareBtns button{flex:1;background:var(--ink-3);border:1px solid var(--line);border-radius:9px;padding:11px 0;font-size:13px;font-weight:600;}
+
+  .adv{margin-top:14px;}
+  .adv summary{font-size:12px;color:var(--faint);cursor:pointer;list-style:none;}
+  .adv summary::-webkit-details-marker{display:none;}
+  .adv summary::before{content:'▸ ';}
+  .adv[open] summary::before{content:'▾ ';}
+
+  .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
+  .err.on{display:block;}
+
+  .checklist{margin-top:20px;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:15px 17px;}
+  .checklist h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:14px;margin-bottom:9px;color:var(--saffron);}
+  .checklist li{font-size:12.5px;color:var(--dim);line-height:1.6;margin-left:15px;margin-bottom:4px;}
+
+  /* live */
+  #live{display:none;position:fixed;inset:0;background:#000;}
+  #live.on{display:block;}
+  #localVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+  .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
+  .pill{background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:10px;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.04em;}
+  .pill b{display:block;font-size:15px;color:var(--paper);margin-top:2px;}
+  .pill b.good{color:var(--signal);}
+  .pills{display:flex;gap:6px;}
+  .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 11px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
+  .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
+  @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
+
+  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;text-align:center;padding:28px;z-index:4;background:rgba(0,0,0,.45);}
+  .waiting.hide{display:none;}
+  .spinner{width:32px;height:32px;border:3px solid rgba(239,231,216,.15);border-top-color:var(--saffron);border-radius:50%;animation:sp .9s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .waiting p{font-size:14px;color:var(--paper);line-height:1.6;max-width:26ch;}
+  .waiting .sub{font-size:12.5px;color:var(--dim);}
+
+  .prompt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;background:rgba(232,163,61,.96);color:var(--ink);border-radius:18px;padding:22px 24px;max-width:min(320px,84vw);text-align:center;box-shadow:0 22px 50px -14px rgba(0,0,0,.7);display:none;}
+  .prompt.on{display:block;animation:pop .28s ease-out;}
+  @keyframes pop{from{transform:translate(-50%,-50%) scale(.93);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
+  .prompt .who{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.65;margin-bottom:7px;}
+  .prompt .what{font-size:19px;font-weight:700;line-height:1.35;}
+
+  .bottom{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:14px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.62),transparent);display:flex;flex-direction:column;gap:9px;}
+  .noteRow{display:flex;gap:7px;}
+  .note{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:11px 4px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.25;position:relative;}
+  .note:active{background:rgba(239,231,216,.2);}
+  .note b{display:block;font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--saffron);}
+  .note.bad b{color:var(--chili);}
+  .note.good b{color:var(--signal);}
+  .ctrls{display:flex;gap:8px;}
+  .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:13px 0;font-size:12.5px;font-weight:600;text-align:center;}
+  .ctrl.off{color:var(--chili);border-color:rgba(210,71,43,.5);}
+  .ctrl.leave{background:var(--chili);color:var(--paper);border-color:transparent;}
+
+  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:9;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
+  .toast.on{display:block;}
+
+  /* summary */
+  #summary{display:none;position:fixed;inset:0;background:var(--ink);z-index:20;overflow-y:auto;padding:30px 20px;}
+  #summary.on{display:block;}
+  .sumWrap{max-width:420px;margin:0 auto;}
+  .sumCard{background:var(--ink-2);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:12px;}
+  .bigNum{font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:48px;line-height:1;color:var(--saffron);}
+  .sumRow{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .sumRow:last-child{border-bottom:none;}
+  .sumRow span:last-child{font-family:'JetBrains Mono',monospace;color:var(--saffron);}
+  textarea{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--paper);font-size:13.5px;line-height:1.55;resize:vertical;min-height:70px;margin-bottom:10px;}
+  textarea:focus{outline:none;border-color:var(--saffron);}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="lobby">
+  <div class="brand"><div class="mark">L</div><span>LONGTAIL</span><span class="tagpill">GUIDE</span></div>
+  <h1>Start a walk</h1>
+  <p class="lede">You carry the camera. Send the link to whoever's watching — they open it in a browser and tap Join. Nothing to install on their side.</p>
+
+  <label>Walk code</label>
+  <input class="in" id="fRoom" placeholder="yaowarat-01" autocomplete="off" spellcheck="false">
+
+  <div class="share" id="shareBox" style="display:none;">
+    <h3>Send this to your traveler</h3>
+    <p>They open it, type a name, tap Join. That's all they do.</p>
+    <div class="link" id="shareLink"></div>
+    <div class="shareBtns">
+      <button id="btnCopy">Copy link</button>
+      <button id="btnShare">Share…</button>
+    </div>
+  </div>
+
+  <details class="adv" id="advBox">
+    <summary>Token server address</summary>
+    <input class="in small" id="fApi" placeholder="/api/token" autocomplete="off" spellcheck="false" style="margin-top:8px;">
+  </details>
+
+  <button class="btn go" id="btnStart">Start walking</button>
+
+  <div class="err" id="errBox"></div>
+
+  <div class="checklist">
+    <h3>Before you set off</h3>
+    <ul>
+      <li>Phone at 100%, power bank in your pocket</li>
+      <li>Mobile data on — don't trust street wifi</li>
+      <li>Wired earbuds with a mic, or they'll hear the market instead of you</li>
+      <li>Rotation locked, phone at chest height</li>
+      <li>Talk continuously — silence feels much longer to them than to you</li>
+    </ul>
+  </div>
+</div>
+
+<div id="live">
+  <video id="localVideo" playsinline autoplay muted></video>
+
+  <div class="waiting" id="waitBox">
+    <div class="spinner"></div>
+    <p id="waitTxt">Starting your camera…</p>
+    <p class="sub" id="waitSub"></p>
+  </div>
+
+  <div class="top">
+    <div class="livedot"><i></i><span>FILMING</span></div>
+    <div class="pills">
+      <div class="pill">TIME<b class="mono" id="tTime">00:00</b></div>
+      <div class="pill">EARNED<b class="mono good" id="tNet">฿0</b></div>
+      <div class="pill">BATT<b class="mono" id="tBatt">—</b></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="prompt" id="promptBox">
+    <div class="who" id="promptWho">Traveler says</div>
+    <div class="what" id="promptWhat"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="noteRow">
+      <button class="note bad" data-ev="Stuttered"><b id="nStut">0</b>Stuttered</button>
+      <button class="note bad" data-ev="Lost signal"><b id="nSig">0</b>Lost signal</button>
+      <button class="note bad" data-ev="Went quiet"><b id="nQuiet">0</b>Went quiet</button>
+      <button class="note good" data-ev="Great moment"><b id="nGood">0</b>Great bit</button>
+    </div>
+    <div class="ctrls">
+      <button class="ctrl" id="cMic">Mute</button>
+      <button class="ctrl" id="cFlip">Flip</button>
+      <button class="ctrl leave" id="cLeave">End walk</button>
+    </div>
+  </div>
+</div>
+
+<div id="summary">
+  <div class="sumWrap">
+    <div class="brand"><div class="mark">L</div><span>WALK FINISHED</span></div>
+    <div class="sumCard" style="text-align:center;">
+      <div class="bigNum" id="sTime">00:00</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);letter-spacing:.06em;margin-top:6px;">TIME WALKED</div>
+    </div>
+    <div class="sumCard">
+      <div class="sumRow"><span>Traveler charged</span><span id="sGross">฿0</span></div>
+      <div class="sumRow"><span>You earn (after 12%)</span><span id="sNet">฿0</span></div>
+      <div class="sumRow"><span>Battery used</span><span id="sBatt">—</span></div>
+      <div class="sumRow"><span>Stutters / signal drops</span><span id="sDrops">0</span></div>
+      <div class="sumRow"><span>Times they went quiet</span><span id="sQuiet">0</span></div>
+      <div class="sumRow"><span>Great moments</span><span id="sGood">0</span></div>
+    </div>
+    <label>What was the best moment? (ask them)</label>
+    <textarea id="dBest" placeholder="Their words, not your summary"></textarea>
+    <label>What was annoying or awkward?</label>
+    <textarea id="dBad" placeholder="Push — people are polite"></textarea>
+    <label>Would they do it again, and at what price?</label>
+    <textarea id="dAgain" placeholder="Write the price they say, even if it's low"></textarea>
+    <button class="btn" id="btnDownload">Download this session</button>
+    <button class="btn" id="btnAgain" style="background:var(--ink-3);color:var(--paper);">Start another walk</button>
+  </div>
+</div>
+
+<script>
+const LK = window.LivekitClient;
+const RATE = 15, FEE = 0.12;
+let room=null, secs=0, timerInt=null, promptTimeout=null;
+let facing='environment', micOn=true, battStart=null, battery=null;
+const notes={}, events=[];
+
+const $=id=>document.getElementById(id);
+const enc=new TextEncoder(), dec=new TextDecoder();
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+
+/* battery */
+if(navigator.getBattery){ navigator.getBattery().then(b=>{battery=b;}).catch(()=>{}); }
+const battPct=()=>battery?Math.round(battery.level*100):null;
+
+/* token endpoint */
+const qs=new URLSearchParams(location.search);
+const STATIC=/github\.io$|gitlab\.io$|pages\.dev$|netlify\.app$/.test(location.hostname);
+$('fApi').value=qs.get('api')||(STATIC?'':'/api/token');
+if(STATIC&&!qs.get('api')){ $('advBox').open=true; showErr('This page is on a static host that cannot run the token endpoint. Deploy api/token.js to Vercel and paste its full URL below.'); }
+const apiUrl=()=>($('fApi').value.trim()||'/api/token');
+
+/* walk code + share link */
+const savedRoom=qs.get('room')||'';
+if(savedRoom) $('fRoom').value=savedRoom;
+function refreshLink(){
+  const code=$('fRoom').value.trim();
+  if(code.length<3){ $('shareBox').style.display='none'; return; }
+  const custom=$('fApi').value.trim();
+  const apiParam=custom&&custom!=='/api/token'?`&api=${encodeURIComponent(custom)}`:'';
+  const base=location.origin+location.pathname.replace(/[^/]*$/,'');
+  $('shareLink').textContent=`${base}watch.html?room=${encodeURIComponent(code)}${apiParam}`;
+  $('shareBox').style.display='block';
+}
+$('fRoom').addEventListener('input',refreshLink);
+$('fApi').addEventListener('input',refreshLink);
+refreshLink();
+
+$('btnCopy').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText($('shareLink').textContent); $('btnCopy').textContent='Copied'; setTimeout(()=>$('btnCopy').textContent='Copy link',1800); }
+  catch{ showErr('Copy failed — select the link and copy it by hand.'); }
+});
+$('btnShare').addEventListener('click',async()=>{
+  const url=$('shareLink').textContent;
+  if(navigator.share){ try{ await navigator.share({title:'Join my walk in Bangkok',text:'Tap to watch live — no app needed',url}); }catch{} }
+  else { await navigator.clipboard.writeText(url); $('btnShare').textContent='Copied'; setTimeout(()=>$('btnShare').textContent='Share…',1800); }
+});
+
+function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
+function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
+
+/* ---- start ---- */
+$('btnStart').addEventListener('click',start);
+
+async function start(){
+  const roomCode=$('fRoom').value.trim();
+  if(roomCode.length<3) return showErr('Give the walk a code — at least 3 characters. Your traveler needs the same one.');
+  $('errBox').classList.remove('on');
+  $('btnStart').disabled=true; $('btnStart').textContent='Connecting…';
+
+  try{
+    const res=await fetch(apiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({room:roomCode,name:'Guide',role:'guide'})});
+    const ctype=res.headers.get('content-type')||'';
+    if(!ctype.includes('application/json')){
+      throw new Error(res.status===405||res.status===404
+        ? 'The token server is not at that address. If this page is on GitHub Pages, deploy api/token.js to Vercel and paste its URL in "Token server address".'
+        : `Token server returned ${res.status} instead of JSON.`);
+    }
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Token request failed');
+
+    room=new LK.Room({
+      adaptiveStream:true, dynacast:true,
+      videoCaptureDefaults:{facingMode:'environment',resolution:LK.VideoPresets.h540.resolution},
+      publishDefaults:{videoEncoding:{maxBitrate:1_200_000,maxFramerate:24},simulcast:true}
+    });
+    wire();
+    await room.connect(data.url,data.token);
+
+    $('lobby').style.display='none';
+    $('live').classList.add('on');
+
+    await room.localParticipant.setCameraEnabled(true);
+    await room.localParticipant.setMicrophoneEnabled(true);
+    attachLocal();
+    battStart=battPct();
+    keepAwake();
+    startTimer();
+    $('waitTxt').textContent='You are live.';
+    $('waitSub').textContent='Waiting for your traveler to open the link…';
+  }catch(e){
+    console.error(e);
+    showErr(e.message==='Failed to fetch'
+      ? 'Could not reach the token server. Check the address under "Token server address".'
+      : e.message);
+    $('btnStart').disabled=false; $('btnStart').textContent='Start walking';
+  }
+}
+
+function attachLocal(){
+  const pub=room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
+  if(pub?.track) pub.track.attach($('localVideo'));
+}
+
+function wire(){
+  room
+    .on(LK.RoomEvent.ParticipantConnected,p=>{
+      $('waitBox').classList.add('hide');
+      toast(`${p.name||'Your traveler'} joined`);
+      if(navigator.vibrate) navigator.vibrate([40,60,40]);
+    })
+    .on(LK.RoomEvent.ParticipantDisconnected,p=>{
+      $('waitTxt').textContent='They dropped out.';
+      $('waitSub').textContent='Waiting for them to come back — keep walking or end the walk.';
+      $('waitBox').classList.remove('hide');
+      logEvent('Traveler dropped');
+    })
+    .on(LK.RoomEvent.TrackSubscribed,track=>{
+      if(track.kind==='audio'){ const el=track.attach(); el.style.display='none'; document.body.appendChild(el); }
+    })
+    .on(LK.RoomEvent.DataReceived,(payload,p)=>{
+      try{ const m=JSON.parse(dec.decode(payload));
+        if(m.type==='direction') showPrompt(m.text,p?.name||'Traveler');
+      }catch{}
+    })
+    .on(LK.RoomEvent.ConnectionQualityChanged,(q,p)=>{
+      if(p?.isLocal&&q===LK.ConnectionQuality.Poor){ toast('Weak signal here'); logEvent('Poor signal'); }
+    })
+    .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Signal dropped — reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); logEvent('Reconnecting'); })
+    .on(LK.RoomEvent.Reconnected,()=>{ $('waitBox').classList.add('hide'); toast('Back online'); });
+}
+
+function showPrompt(text,who){
+  $('promptWho').textContent=`${who} says`;
+  $('promptWhat').textContent=text;
+  $('promptBox').classList.add('on');
+  if(navigator.vibrate) navigator.vibrate(70);
+  logEvent('Direction: '+text);
+  clearTimeout(promptTimeout);
+  promptTimeout=setTimeout(()=>$('promptBox').classList.remove('on'),9000);
+}
+
+function startTimer(){
+  timerInt=setInterval(()=>{
+    secs++;
+    $('tTime').textContent=fmt(secs);
+    $('tNet').textContent='฿'+Math.round(secs*(RATE/60)*(1-FEE));
+    const b=battPct();
+    $('tBatt').textContent=b!=null?b+'%':'—';
+  },1000);
+}
+
+function logEvent(ev){ events.push({at:secs,ev}); }
+
+document.querySelectorAll('.note').forEach(b=>b.addEventListener('click',()=>{
+  const ev=b.dataset.ev;
+  notes[ev]=(notes[ev]||0)+1;
+  b.querySelector('b').textContent=notes[ev];
+  logEvent(ev);
+  if(navigator.vibrate) navigator.vibrate(18);
+}));
+
+$('cMic').addEventListener('click',async()=>{
+  micOn=!micOn;
+  await room.localParticipant.setMicrophoneEnabled(micOn);
+  $('cMic').textContent=micOn?'Mute':'Unmute';
+  $('cMic').classList.toggle('off',!micOn);
+});
+$('cFlip').addEventListener('click',async()=>{
+  facing=facing==='environment'?'user':'environment';
+  try{
+    await room.localParticipant.setCameraEnabled(false);
+    await room.localParticipant.setCameraEnabled(true,{facingMode:facing});
+    attachLocal();
+    toast(facing==='environment'?'Rear camera — the street':'Front camera — your face');
+  }catch{ toast('Could not switch camera'); }
+});
+$('cLeave').addEventListener('click',end);
+
+async function end(){
+  clearInterval(timerInt); releaseAwake();
+  if(room) await room.disconnect();
+  const gross=Math.round(secs*(RATE/60));
+  const bUsed=battStart!=null&&battPct()!=null?battStart-battPct():null;
+  $('sTime').textContent=fmt(secs);
+  $('sGross').textContent='฿'+gross;
+  $('sNet').textContent='฿'+Math.round(gross*(1-FEE));
+  $('sBatt').textContent=bUsed!=null?bUsed+'%':'—';
+  $('sDrops').textContent=(notes['Stuttered']||0)+(notes['Lost signal']||0);
+  $('sQuiet').textContent=notes['Went quiet']||0;
+  $('sGood').textContent=notes['Great moment']||0;
+  $('live').classList.remove('on');
+  $('summary').classList.add('on');
+}
+
+$('btnDownload').addEventListener('click',()=>{
+  const bUsed=battStart!=null&&battPct()!=null?battStart-battPct():null;
+  const data={
+    date:new Date().toISOString(),
+    walk_code:$('fRoom').value.trim(),
+    seconds:secs, rate_baht_min:RATE,
+    charged_baht:Math.round(secs*(RATE/60)),
+    earned_baht:Math.round(secs*(RATE/60)*(1-FEE)),
+    battery_used_pct:bUsed,
+    counts:{...notes},
+    events,
+    debrief:{ best:$('dBest').value, annoying:$('dBad').value, again_and_price:$('dAgain').value }
+  };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`longtail-walk-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  $('btnDownload').textContent='Saved to your downloads';
+});
+$('btnAgain').addEventListener('click',()=>location.reload());
+
+let wakeLock=null;
+async function keepAwake(){ try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch{} }
+function releaseAwake(){ if(wakeLock){ wakeLock.release(); wakeLock=null; } }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&room) keepAwake(); });
+window.addEventListener('beforeunload',e=>{ if(room&&secs>0){ e.preventDefault(); e.returnValue=''; } });
+</script>
+</body>
+</html>

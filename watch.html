@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12181B">
+<meta name="robots" content="noindex">
+<title>Watch live in Bangkok</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#12181B;--ink-2:#1B2327;--ink-3:#232C31;--saffron:#E8A33D;--chili:#D2472B;--signal:#46D189;--paper:#EFE7D8;--dim:rgba(239,231,216,.6);--faint:rgba(239,231,216,.32);--line:rgba(239,231,216,.13);}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;height:100%;overscroll-behavior:none;}
+  button{font-family:inherit;color:inherit;border:none;cursor:pointer;}
+  input{font-family:inherit;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  :focus-visible{outline:2px solid var(--saffron);outline-offset:2px;}
+
+  #lobby{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;max-width:400px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
+  .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--chili),var(--saffron));display:flex;align-items:center;justify-content:center;font-family:'Big Shoulders Display',sans-serif;font-weight:900;color:var(--ink);font-size:16px;}
+  .brand span{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:20px;letter-spacing:.03em;}
+  h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:34px;line-height:.95;margin-bottom:10px;}
+  h1 em{font-style:normal;color:var(--saffron);}
+  .lede{font-size:14px;color:var(--dim);line-height:1.6;margin-bottom:22px;}
+  label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;}
+  .in{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:15px;color:var(--paper);font-size:16px;}
+  .in:focus{outline:none;border-color:var(--saffron);}
+  .btn{width:100%;padding:17px;border-radius:13px;font-weight:700;font-size:16px;margin-top:18px;background:var(--saffron);color:var(--ink);}
+  .btn:disabled{background:var(--ink-3);color:var(--faint);cursor:not-allowed;}
+  .hint{font-size:12px;color:var(--faint);line-height:1.6;margin-top:14px;text-align:center;}
+  .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
+  .err.on{display:block;}
+
+  #live{display:none;position:fixed;inset:0;background:#000;}
+  #live.on{display:block;}
+  #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+  .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
+  .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 12px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
+  .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
+  @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
+  .pill{background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:10px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.04em;}
+  .pill b{display:block;font-size:15px;color:var(--saffron);margin-top:2px;}
+
+  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;z-index:4;background:rgba(0,0,0,.5);}
+  .waiting.hide{display:none;}
+  .spinner{width:34px;height:34px;border:3px solid rgba(239,231,216,.15);border-top-color:var(--saffron);border-radius:50%;animation:sp .9s linear infinite;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .waiting p{font-size:14.5px;color:var(--paper);line-height:1.6;max-width:26ch;}
+  .waiting .sub{font-size:12.5px;color:var(--dim);}
+
+  .sent{position:absolute;left:50%;transform:translateX(-50%);bottom:190px;z-index:7;background:rgba(232,163,61,.95);color:var(--ink);border-radius:14px;padding:12px 18px;font-size:14px;font-weight:700;display:none;max-width:82vw;text-align:center;}
+  .sent.on{display:block;animation:pop .25s ease-out;}
+  @keyframes pop{from{transform:translateX(-50%) scale(.94);opacity:0;}to{transform:translateX(-50%) scale(1);opacity:1;}}
+
+  .bottom{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:14px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);display:flex;flex-direction:column;gap:10px;}
+  .presets{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+  .preset{background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:999px;padding:10px 15px;font-size:13px;}
+  .preset:active{background:rgba(239,231,216,.22);}
+  .composer{display:flex;gap:8px;}
+  .composer input{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:12px;padding:14px 15px;color:var(--paper);font-size:15px;}
+  .composer input:focus{outline:none;border-color:var(--saffron);}
+  .composer button{background:var(--saffron);color:var(--ink);border-radius:12px;padding:0 20px;font-weight:700;font-size:14px;}
+  .ctrls{display:flex;gap:8px;}
+  .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:11px;padding:13px 0;font-size:12.5px;font-weight:600;text-align:center;}
+  .ctrl.off{color:var(--chili);border-color:rgba(210,71,43,.5);}
+  .ctrl.leave{background:var(--chili);color:var(--paper);border-color:transparent;}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:9;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;}
+  .toast.on{display:block;}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="lobby">
+  <div class="brand"><div class="mark">L</div><span>LONGTAIL</span></div>
+  <h1>You're about to walk <em>Bangkok</em></h1>
+  <p class="lede">Someone is there right now with a camera. You'll see what they see, and you can tell them where to go — turn left, get closer, what's that.</p>
+
+  <label>Your name</label>
+  <input class="in" id="fName" placeholder="Type your name" autocomplete="off">
+
+  <button class="btn" id="btnJoin">Join the walk</button>
+
+  <p class="hint">Your camera stays off. They'll hear you if you talk — allow microphone access when asked.</p>
+  <div class="err" id="errBox"></div>
+</div>
+
+<div id="live">
+  <video id="remoteVideo" playsinline autoplay></video>
+
+  <div class="waiting" id="waitBox">
+    <div class="spinner"></div>
+    <p id="waitTxt">Connecting…</p>
+    <p class="sub" id="waitSub"></p>
+  </div>
+
+  <div class="top">
+    <div class="livedot"><i></i><span>LIVE IN BANGKOK</span></div>
+    <div class="pill">WATCHING<b class="mono" id="tTime">00:00</b></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="sent" id="sentBox"></div>
+
+  <div class="bottom">
+    <div class="presets">
+      <button class="preset">Get closer</button>
+      <button class="preset">Turn around</button>
+      <button class="preset">Look up</button>
+      <button class="preset">Stay here</button>
+      <button class="preset">What is that?</button>
+      <button class="preset">Slow down</button>
+    </div>
+    <div class="composer">
+      <input id="msgIn" placeholder="Tell them where to go…" autocomplete="off">
+      <button id="msgSend">Send</button>
+    </div>
+    <div class="ctrls">
+      <button class="ctrl" id="cMic">Mute</button>
+      <button class="ctrl leave" id="cLeave">Leave</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LK=window.LivekitClient;
+let room=null, secs=0, timerInt=null, micOn=true;
+const $=id=>document.getElementById(id);
+const enc=new TextEncoder(), dec=new TextDecoder();
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+
+const qs=new URLSearchParams(location.search);
+const ROOM=qs.get('room')||'';
+const API=qs.get('api')||'/api/token';
+
+if(!ROOM){ showErr('This link is missing its walk code. Ask your guide to send the link again.'); $('btnJoin').disabled=true; }
+
+function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
+function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
+
+$('fName').addEventListener('keydown',e=>{ if(e.key==='Enter') join(); });
+$('btnJoin').addEventListener('click',join);
+
+async function join(){
+  const name=$('fName').value.trim();
+  if(!name) return showErr('Put your name in first.');
+  $('errBox').classList.remove('on');
+  $('btnJoin').disabled=true; $('btnJoin').textContent='Connecting…';
+
+  try{
+    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({room:ROOM,name,role:'traveler'})});
+    const ctype=res.headers.get('content-type')||'';
+    if(!ctype.includes('application/json')) throw new Error('The walk server is not responding properly. Ask your guide to check their setup.');
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Could not join');
+
+    room=new LK.Room({adaptiveStream:true,dynacast:true});
+    wire();
+    await room.connect(data.url,data.token);
+    try{ await room.localParticipant.setMicrophoneEnabled(true); }
+    catch{ toast('No microphone — you can still type directions'); }
+
+    $('lobby').style.display='none';
+    $('live').classList.add('on');
+    $('waitTxt').textContent='Connected.';
+    $('waitSub').textContent='Waiting for their camera…';
+    timerInt=setInterval(()=>{ secs++; $('tTime').textContent=fmt(secs); },1000);
+  }catch(e){
+    console.error(e);
+    showErr(e.message==='Failed to fetch'?'Could not reach the walk server. Check your connection, or ask your guide for a fresh link.':e.message);
+    $('btnJoin').disabled=false; $('btnJoin').textContent='Join the walk';
+  }
+}
+
+function wire(){
+  room
+    .on(LK.RoomEvent.TrackSubscribed,track=>{
+      if(track.kind==='video'){ track.attach($('remoteVideo')); $('waitBox').classList.add('hide'); toast('You can see them — try tapping a direction'); }
+      if(track.kind==='audio'){ const el=track.attach(); el.style.display='none'; document.body.appendChild(el); }
+    })
+    .on(LK.RoomEvent.ParticipantDisconnected,()=>{
+      $('waitTxt').textContent='Your guide dropped out.';
+      $('waitSub').textContent='Hang on — they may be walking through a dead spot.';
+      $('waitBox').classList.remove('hide');
+    })
+    .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); })
+    .on(LK.RoomEvent.Reconnected,()=>{ $('waitBox').classList.add('hide'); toast('Back online'); })
+    .on(LK.RoomEvent.Disconnected,()=>{ clearInterval(timerInt); alert('The walk has ended.'); location.reload(); });
+}
+
+function send(text){
+  if(!text.trim()||!room) return;
+  room.localParticipant.publishData(enc.encode(JSON.stringify({type:'direction',text:text.trim()})),{reliable:true});
+  $('sentBox').textContent='Sent: '+text.trim();
+  $('sentBox').classList.add('on');
+  clearTimeout(send._t); send._t=setTimeout(()=>$('sentBox').classList.remove('on'),2600);
+  if(navigator.vibrate) navigator.vibrate(18);
+}
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>send(b.textContent)));
+$('msgSend').addEventListener('click',()=>{ send($('msgIn').value); $('msgIn').value=''; });
+$('msgIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ send($('msgIn').value); $('msgIn').value=''; } });
+
+$('cMic').addEventListener('click',async()=>{
+  micOn=!micOn;
+  await room.localParticipant.setMicrophoneEnabled(micOn);
+  $('cMic').textContent=micOn?'Mute':'Unmute';
+  $('cMic').classList.toggle('off',!micOn);
+});
+$('cLeave').addEventListener('click',async()=>{ clearInterval(timerInt); if(room) await room.disconnect(); location.reload(); });
+</script>
+</body>
+</html>

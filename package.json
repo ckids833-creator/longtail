@@ -1,0 +1,9 @@
+{
+  "name": "longtail-solo",
+  "version": "0.1.0",
+  "description": "Longtail solo-guide test build",
+  "type": "module",
+  "dependencies": {
+    "livekit-server-sdk": "^2.9.7"
+  }
+}
