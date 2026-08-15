@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#12181B">
 <meta name="robots" content="noindex">
 <title>Longtail — Guide</title>
@@ -26,40 +26,34 @@
   .tagpill{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--saffron);border:1px solid rgba(232,163,61,.4);border-radius:999px;padding:4px 9px;letter-spacing:.06em;}
   h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:32px;line-height:.95;margin-bottom:8px;}
   .lede{font-size:13.5px;color:var(--dim);line-height:1.6;margin-bottom:20px;}
-
   label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin:15px 0 7px;}
   .in{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:14px 15px;color:var(--paper);font-size:15px;}
   .in:focus{outline:none;border-color:var(--saffron);}
   .in.small{font-size:12.5px;font-family:'JetBrains Mono',monospace;padding:11px 13px;}
-
   .btn{width:100%;padding:16px;border-radius:13px;font-weight:700;font-size:15px;margin-top:20px;background:var(--saffron);color:var(--ink);}
   .btn:disabled{background:var(--ink-3);color:var(--faint);cursor:not-allowed;}
   .btn.go{background:var(--signal);}
-
   .share{margin-top:16px;background:rgba(70,209,137,.07);border:1px solid rgba(70,209,137,.3);border-radius:13px;padding:15px;}
   .share h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:15px;color:var(--signal);margin-bottom:6px;}
   .share p{font-size:12.5px;color:var(--dim);line-height:1.55;margin-bottom:10px;}
   .link{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--saffron);word-break:break-all;line-height:1.5;background:var(--ink);border-radius:8px;padding:10px;}
   .shareBtns{display:flex;gap:8px;margin-top:9px;}
   .shareBtns button{flex:1;background:var(--ink-3);border:1px solid var(--line);border-radius:9px;padding:11px 0;font-size:13px;font-weight:600;}
-
   .adv{margin-top:14px;}
   .adv summary{font-size:12px;color:var(--faint);cursor:pointer;list-style:none;}
   .adv summary::-webkit-details-marker{display:none;}
   .adv summary::before{content:'▸ ';}
   .adv[open] summary::before{content:'▾ ';}
-
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
-
   .checklist{margin-top:20px;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:15px 17px;}
   .checklist h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:14px;margin-bottom:9px;color:var(--saffron);}
   .checklist li{font-size:12.5px;color:var(--dim);line-height:1.6;margin-left:15px;margin-bottom:4px;}
 
-  /* live */
   #live{display:none;position:fixed;inset:0;background:#000;}
   #live.on{display:block;}
-  #localVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+  #localVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;transform-origin:center center;transition:transform .16s ease-out;}
+
   .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
   .pill{background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:10px;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.04em;}
   .pill b{display:block;font-size:15px;color:var(--paper);margin-top:2px;}
@@ -69,35 +63,67 @@
   .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
   @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
 
-  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;text-align:center;padding:28px;z-index:4;background:rgba(0,0,0,.45);}
+  .zoomRail{position:absolute;right:11px;top:50%;transform:translateY(-50%);z-index:8;display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(10,15,17,.55);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.16);border-radius:26px;padding:10px 6px;}
+  .zBtn{width:34px;height:34px;border-radius:50%;background:rgba(239,231,216,.13);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;line-height:1;}
+  .zBtn:active{background:rgba(239,231,216,.3);}
+  .zBtn:disabled{opacity:.3;}
+  .zSliderWrap{height:112px;display:flex;align-items:center;justify-content:center;}
+  .zSlider{-webkit-appearance:none;appearance:none;width:106px;height:3px;background:rgba(239,231,216,.26);border-radius:2px;transform:rotate(-90deg);}
+  .zSlider::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--saffron);}
+  .zSlider::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--saffron);border:none;}
+  .zVal{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--saffron);min-width:34px;text-align:center;}
+  .zHint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--faint);letter-spacing:.04em;}
+  .zoomRail.hide{display:none;}
+
+  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;text-align:center;padding:28px;z-index:5;background:rgba(0,0,0,.45);}
   .waiting.hide{display:none;}
   .spinner{width:32px;height:32px;border:3px solid rgba(239,231,216,.15);border-top-color:var(--saffron);border-radius:50%;animation:sp .9s linear infinite;}
   @keyframes sp{to{transform:rotate(360deg);}}
   .waiting p{font-size:14px;color:var(--paper);line-height:1.6;max-width:26ch;}
   .waiting .sub{font-size:12.5px;color:var(--dim);}
 
-  .prompt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;background:rgba(232,163,61,.96);color:var(--ink);border-radius:18px;padding:22px 24px;max-width:min(320px,84vw);text-align:center;box-shadow:0 22px 50px -14px rgba(0,0,0,.7);display:none;}
+  .prompt{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:7;background:rgba(232,163,61,.96);color:var(--ink);border-radius:18px;padding:20px 22px;max-width:min(290px,76vw);text-align:center;box-shadow:0 22px 50px -14px rgba(0,0,0,.7);display:none;}
   .prompt.on{display:block;animation:pop .28s ease-out;}
   @keyframes pop{from{transform:translate(-50%,-50%) scale(.93);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
-  .prompt .who{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.65;margin-bottom:7px;}
-  .prompt .what{font-size:19px;font-weight:700;line-height:1.35;}
+  .prompt .who{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.65;margin-bottom:6px;}
+  .prompt .what{font-size:18px;font-weight:700;line-height:1.35;}
 
-  .bottom{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:14px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.62),transparent);display:flex;flex-direction:column;gap:9px;}
-  .noteRow{display:flex;gap:7px;}
-  .note{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:11px 4px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.25;position:relative;}
+  .chatPanel{position:absolute;left:0;right:0;bottom:0;z-index:12;background:rgba(12,17,19,.97);backdrop-filter:blur(12px);border-radius:20px 20px 0 0;border-top:1px solid var(--line);display:none;flex-direction:column;max-height:76%;}
+  .chatPanel.on{display:flex;}
+  .chatHead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;border-bottom:1px solid var(--line);}
+  .chatHead h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:16px;}
+  .chatHead button{font-size:24px;color:var(--dim);padding:0 4px;line-height:1;}
+  .chatBody{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
+  .msg{max-width:82%;font-size:14px;line-height:1.45;padding:10px 13px;border-radius:15px;word-break:break-word;}
+  .msg.them{background:var(--ink-3);align-self:flex-start;border-bottom-left-radius:4px;}
+  .msg.me{background:var(--saffron);color:var(--ink);align-self:flex-end;border-bottom-right-radius:4px;font-weight:500;}
+  .msg .t{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.5;margin-top:4px;}
+  .chatEmpty{text-align:center;color:var(--faint);font-size:12.5px;line-height:1.6;padding:26px 10px;}
+  .quickRow{display:flex;gap:7px;overflow-x:auto;padding:9px 14px 0;}
+  .quick{flex:none;background:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:8px 13px;font-size:12.5px;white-space:nowrap;}
+  .chatFoot{display:flex;gap:8px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));}
+  .chatFoot input{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--paper);font-size:16px;}
+  .chatFoot input:focus{outline:none;border-color:var(--saffron);}
+  .chatFoot button{background:var(--saffron);color:var(--ink);border-radius:12px;padding:0 19px;font-weight:700;font-size:14px;}
+
+  .bottom{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:14px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);display:flex;flex-direction:column;gap:9px;}
+  .bottom.hide{display:none;}
+  .noteRow{display:flex;gap:6px;}
+  .note{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:10px 3px;font-size:10.5px;font-weight:600;text-align:center;line-height:1.2;}
   .note:active{background:rgba(239,231,216,.2);}
-  .note b{display:block;font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--saffron);}
+  .note b{display:block;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--saffron);}
   .note.bad b{color:var(--chili);}
   .note.good b{color:var(--signal);}
-  .ctrls{display:flex;gap:8px;}
-  .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:13px 0;font-size:12.5px;font-weight:600;text-align:center;}
+  .ctrls{display:flex;gap:6px;}
+  .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:13px 0;font-size:12px;font-weight:600;text-align:center;position:relative;}
   .ctrl.off{color:var(--chili);border-color:rgba(210,71,43,.5);}
   .ctrl.leave{background:var(--chili);color:var(--paper);border-color:transparent;}
+  .badge{position:absolute;top:-5px;right:-3px;background:var(--signal);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px;}
+  .badge.on{display:flex;}
 
-  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:9;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:14;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
   .toast.on{display:block;}
 
-  /* summary */
   #summary{display:none;position:fixed;inset:0;background:var(--ink);z-index:20;overflow-y:auto;padding:30px 20px;}
   #summary.on{display:block;}
   .sumWrap{max-width:420px;margin:0 auto;}
@@ -108,7 +134,7 @@
   .sumRow span:last-child{font-family:'JetBrains Mono',monospace;color:var(--saffron);}
   textarea{width:100%;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--paper);font-size:13.5px;line-height:1.55;resize:vertical;min-height:70px;margin-bottom:10px;}
   textarea:focus{outline:none;border-color:var(--saffron);}
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -116,7 +142,7 @@
 <div id="lobby">
   <div class="brand"><div class="mark">L</div><span>LONGTAIL</span><span class="tagpill">GUIDE</span></div>
   <h1>Start a walk</h1>
-  <p class="lede">You carry the camera. Send the link to whoever's watching — they open it in a browser and tap Join. Nothing to install on their side.</p>
+  <p class="lede">You carry the camera. Send the link to whoever's watching — they open it in a browser and tap Join.</p>
 
   <label>Walk code</label>
   <input class="in" id="fRoom" placeholder="yaowarat-01" autocomplete="off" spellcheck="false">
@@ -137,7 +163,6 @@
   </details>
 
   <button class="btn go" id="btnStart">Start walking</button>
-
   <div class="err" id="errBox"></div>
 
   <div class="checklist">
@@ -154,6 +179,14 @@
 
 <div id="live">
   <video id="localVideo" playsinline autoplay muted></video>
+
+  <div class="zoomRail" id="zoomRail">
+    <button class="zBtn" id="zIn" aria-label="Zoom in">+</button>
+    <div class="zSliderWrap"><input type="range" class="zSlider" id="zSlider" min="1" max="5" step="0.1" value="1" aria-label="Zoom level"></div>
+    <button class="zBtn" id="zOut" aria-label="Zoom out">&minus;</button>
+    <span class="zVal mono" id="zVal">1.0&times;</span>
+    <span class="zHint" id="zHint"></span>
+  </div>
 
   <div class="waiting" id="waitBox">
     <div class="spinner"></div>
@@ -177,17 +210,39 @@
     <div class="what" id="promptWhat"></div>
   </div>
 
-  <div class="bottom">
+  <div class="bottom" id="bottomBar">
     <div class="noteRow">
-      <button class="note bad" data-ev="Stuttered"><b id="nStut">0</b>Stuttered</button>
-      <button class="note bad" data-ev="Lost signal"><b id="nSig">0</b>Lost signal</button>
-      <button class="note bad" data-ev="Went quiet"><b id="nQuiet">0</b>Went quiet</button>
+      <button class="note bad" data-ev="Stuttered"><b id="nStut">0</b>Stutter</button>
+      <button class="note bad" data-ev="Lost signal"><b id="nSig">0</b>Signal</button>
+      <button class="note bad" data-ev="Went quiet"><b id="nQuiet">0</b>Quiet</button>
       <button class="note good" data-ev="Great moment"><b id="nGood">0</b>Great bit</button>
     </div>
     <div class="ctrls">
       <button class="ctrl" id="cMic">Mute</button>
       <button class="ctrl" id="cFlip">Flip</button>
-      <button class="ctrl leave" id="cLeave">End walk</button>
+      <button class="ctrl" id="cChat">Chat<span class="badge" id="chatBadge">0</span></button>
+      <button class="ctrl leave" id="cLeave">End</button>
+    </div>
+  </div>
+
+  <div class="chatPanel" id="chatPanel">
+    <div class="chatHead">
+      <h3>Chat</h3>
+      <button id="chatClose" aria-label="Close chat">&times;</button>
+    </div>
+    <div class="chatBody" id="chatBody">
+      <div class="chatEmpty">Nothing yet. Their directions land here too, so you can scroll back if you missed one.</div>
+    </div>
+    <div class="quickRow">
+      <button class="quick">Can you hear me?</button>
+      <button class="quick">One second</button>
+      <button class="quick">Too loud here — I'll type</button>
+      <button class="quick">Want me to ask them?</button>
+      <button class="quick">Moving somewhere quieter</button>
+    </div>
+    <div class="chatFoot">
+      <input id="chatIn" placeholder="Type a message…" autocomplete="off">
+      <button id="chatSend">Send</button>
     </div>
   </div>
 </div>
@@ -206,6 +261,7 @@
       <div class="sumRow"><span>Stutters / signal drops</span><span id="sDrops">0</span></div>
       <div class="sumRow"><span>Times they went quiet</span><span id="sQuiet">0</span></div>
       <div class="sumRow"><span>Great moments</span><span id="sGood">0</span></div>
+      <div class="sumRow"><span>Chat messages</span><span id="sChat">0</span></div>
     </div>
     <label>What was the best moment? (ask them)</label>
     <textarea id="dBest" placeholder="Their words, not your summary"></textarea>
@@ -219,30 +275,30 @@
 </div>
 
 <script>
-const LK = window.LivekitClient;
-const RATE = 15, FEE = 0.12;
+const LK=window.LivekitClient;
+const RATE=15, FEE=0.12;
 let room=null, secs=0, timerInt=null, promptTimeout=null;
-let facing='environment', micOn=true, battStart=null, battery=null;
-const notes={}, events=[];
+let micOn=true, battStart=null, battery=null;
+let cameras=[], camIdx=0, usingFront=false;
+let zoom=1, zoomTrack=null, zoomCaps=null;
+let unread=0, chatOpen=false;
+const notes={}, events=[], chatLog=[];
 
 const $=id=>document.getElementById(id);
 const enc=new TextEncoder(), dec=new TextDecoder();
 const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 
-/* battery */
 if(navigator.getBattery){ navigator.getBattery().then(b=>{battery=b;}).catch(()=>{}); }
 const battPct=()=>battery?Math.round(battery.level*100):null;
 
-/* token endpoint */
 const qs=new URLSearchParams(location.search);
 const STATIC=/github\.io$|gitlab\.io$|pages\.dev$|netlify\.app$/.test(location.hostname);
 $('fApi').value=qs.get('api')||(STATIC?'':'/api/token');
-if(STATIC&&!qs.get('api')){ $('advBox').open=true; showErr('This page is on a static host that cannot run the token endpoint. Deploy api/token.js to Vercel and paste its full URL below.'); }
+if(STATIC&&!qs.get('api')){ $('advBox').open=true; showErr('This page is on a static host that cannot run the token endpoint. Deploy api/token.js to Vercel and paste its URL below.'); }
 const apiUrl=()=>($('fApi').value.trim()||'/api/token');
 
-/* walk code + share link */
-const savedRoom=qs.get('room')||'';
-if(savedRoom) $('fRoom').value=savedRoom;
+if(qs.get('room')) $('fRoom').value=qs.get('room');
 function refreshLink(){
   const code=$('fRoom').value.trim();
   if(code.length<3){ $('shareBox').style.display='none'; return; }
@@ -263,18 +319,17 @@ $('btnCopy').addEventListener('click',async()=>{
 $('btnShare').addEventListener('click',async()=>{
   const url=$('shareLink').textContent;
   if(navigator.share){ try{ await navigator.share({title:'Join my walk in Bangkok',text:'Tap to watch live — no app needed',url}); }catch{} }
-  else { await navigator.clipboard.writeText(url); $('btnShare').textContent='Copied'; setTimeout(()=>$('btnShare').textContent='Share…',1800); }
+  else { try{ await navigator.clipboard.writeText(url); $('btnShare').textContent='Copied'; setTimeout(()=>$('btnShare').textContent='Share…',1800);}catch{} }
 });
 
 function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
 function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
 
-/* ---- start ---- */
 $('btnStart').addEventListener('click',start);
 
 async function start(){
   const roomCode=$('fRoom').value.trim();
-  if(roomCode.length<3) return showErr('Give the walk a code — at least 3 characters. Your traveler needs the same one.');
+  if(roomCode.length<3) return showErr('Give the walk a code — at least 3 characters.');
   $('errBox').classList.remove('on');
   $('btnStart').disabled=true; $('btnStart').textContent='Connecting…';
 
@@ -284,7 +339,7 @@ async function start(){
     const ctype=res.headers.get('content-type')||'';
     if(!ctype.includes('application/json')){
       throw new Error(res.status===405||res.status===404
-        ? 'The token server is not at that address. If this page is on GitHub Pages, deploy api/token.js to Vercel and paste its URL in "Token server address".'
+        ? 'The token server is not at that address. Use your Vercel URL, or set it under "Token server address".'
         : `Token server returned ${res.status} instead of JSON.`);
     }
     const data=await res.json();
@@ -304,6 +359,9 @@ async function start(){
     await room.localParticipant.setCameraEnabled(true);
     await room.localParticipant.setMicrophoneEnabled(true);
     attachLocal();
+    await loadCameras();
+    await setupZoom();
+
     battStart=battPct();
     keepAwake();
     startTimer();
@@ -318,10 +376,128 @@ async function start(){
   }
 }
 
-function attachLocal(){
-  const pub=room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
-  if(pub?.track) pub.track.attach($('localVideo'));
+function localTrack(){
+  const pub=room?.localParticipant.getTrackPublication(LK.Track.Source.Camera);
+  return pub?.track||null;
 }
+function attachLocal(){
+  const t=localTrack();
+  if(t){ t.attach($('localVideo')); }
+}
+
+/* ---------- camera switching by deviceId ----------
+   The old code disabled the camera then re-enabled it with a new
+   facingMode. On many Android phones that republish fails silently,
+   which is why Flip appeared to do nothing. Enumerating real devices
+   and swapping the active one is reliable. */
+async function loadCameras(){
+  try{
+    let devs=await navigator.mediaDevices.enumerateDevices();
+    cameras=devs.filter(d=>d.kind==='videoinput');
+    const cur=localTrack()?.mediaStreamTrack?.getSettings?.().deviceId;
+    const i=cameras.findIndex(c=>c.deviceId===cur);
+    camIdx=i>=0?i:0;
+    $('cFlip').style.display=cameras.length>1?'block':'none';
+  }catch(e){ console.warn('enumerateDevices failed',e); }
+}
+
+$('cFlip').addEventListener('click',async()=>{
+  if(!room) return;
+  if(cameras.length<2) await loadCameras();
+  if(cameras.length<2){ toast('Only one camera on this device'); return; }
+
+  const btn=$('cFlip'); btn.disabled=true;
+  const prev=camIdx;
+  const nextIdx=(camIdx+1)%cameras.length;
+  const next=cameras[nextIdx];
+
+  try{
+    await room.switchActiveDevice('videoinput', next.deviceId);
+    camIdx=nextIdx;
+    attachLocal();
+    await setupZoom();
+    markFacing(next.label);
+    toast(usingFront?'Front camera — your face':'Rear camera — the street');
+    logEvent('Switched camera');
+  }catch(e){
+    console.error('switchActiveDevice failed',e);
+    try{
+      await room.localParticipant.setCameraEnabled(false);
+      await room.localParticipant.setCameraEnabled(true,{deviceId:{exact:next.deviceId}});
+      camIdx=nextIdx;
+      attachLocal(); await setupZoom(); markFacing(next.label);
+      toast('Camera switched');
+    }catch(e2){
+      console.error('fallback failed',e2);
+      camIdx=prev;
+      toast('This phone would not switch camera');
+    }
+  }finally{ btn.disabled=false; }
+});
+
+function markFacing(label){
+  usingFront=/front|user|face/i.test(label||'');
+  applyTransform();
+}
+
+/* ---------- zoom ----------
+   Uses the camera's own zoom where the phone exposes it (real zoom the
+   traveler also sees). Falls back to a CSS crop, which only changes YOUR
+   preview — the rail says which one you're getting. */
+async function setupZoom(){
+  zoomTrack=localTrack()?.mediaStreamTrack||null;
+  zoomCaps=null;
+  try{
+    const caps=zoomTrack?.getCapabilities?.();
+    if(caps&&caps.zoom&&caps.zoom.max>caps.zoom.min) zoomCaps=caps.zoom;
+  }catch{}
+  const s=$('zSlider');
+  if(zoomCaps){
+    s.min=zoomCaps.min; s.max=zoomCaps.max; s.step=zoomCaps.step||0.1;
+    zoom=zoomTrack.getSettings?.().zoom||zoomCaps.min;
+    $('zHint').textContent='REAL';
+  }else{
+    s.min=1; s.max=4; s.step=0.1; zoom=1;
+    $('zHint').textContent='PREVIEW';
+  }
+  s.value=zoom;
+  await applyZoom(zoom);
+}
+
+function applyTransform(){
+  const mirror=usingFront?'scaleX(-1) ':'';
+  const scale=zoomCaps?'':`scale(${zoom})`;
+  $('localVideo').style.transform=(mirror+scale).trim();
+}
+
+async function applyZoom(z){
+  const min=zoomCaps?zoomCaps.min:1, max=zoomCaps?zoomCaps.max:4;
+  zoom=Math.min(max,Math.max(min,z));
+  $('zSlider').value=zoom;
+  $('zVal').textContent=zoom.toFixed(1)+'×';
+  $('zIn').disabled=zoom>=max; $('zOut').disabled=zoom<=min;
+
+  if(zoomCaps&&zoomTrack){
+    try{ await zoomTrack.applyConstraints({advanced:[{zoom}]}); applyTransform(); return; }
+    catch(e){ console.warn('hardware zoom rejected, falling back',e); zoomCaps=null; $('zHint').textContent='PREVIEW'; }
+  }
+  applyTransform();
+}
+
+const step=()=>zoomCaps?Math.max((zoomCaps.step||0.1)*3,(zoomCaps.max-zoomCaps.min)/10):0.4;
+$('zIn').addEventListener('click',()=>applyZoom(zoom+step()));
+$('zOut').addEventListener('click',()=>applyZoom(zoom-step()));
+$('zSlider').addEventListener('input',e=>applyZoom(parseFloat(e.target.value)));
+
+let pinchStart=null, pinchBase=1;
+$('localVideo').addEventListener('touchstart',e=>{
+  if(e.touches.length===2){ pinchStart=dist(e.touches); pinchBase=zoom; }
+},{passive:true});
+$('localVideo').addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&pinchStart){ e.preventDefault(); applyZoom(pinchBase*(dist(e.touches)/pinchStart)); }
+},{passive:false});
+$('localVideo').addEventListener('touchend',()=>{ pinchStart=null; },{passive:true});
+function dist(t){ return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY); }
 
 function wire(){
   room
@@ -330,7 +506,7 @@ function wire(){
       toast(`${p.name||'Your traveler'} joined`);
       if(navigator.vibrate) navigator.vibrate([40,60,40]);
     })
-    .on(LK.RoomEvent.ParticipantDisconnected,p=>{
+    .on(LK.RoomEvent.ParticipantDisconnected,()=>{
       $('waitTxt').textContent='They dropped out.';
       $('waitSub').textContent='Waiting for them to come back — keep walking or end the walk.';
       $('waitBox').classList.remove('hide');
@@ -340,15 +516,18 @@ function wire(){
       if(track.kind==='audio'){ const el=track.attach(); el.style.display='none'; document.body.appendChild(el); }
     })
     .on(LK.RoomEvent.DataReceived,(payload,p)=>{
-      try{ const m=JSON.parse(dec.decode(payload));
-        if(m.type==='direction') showPrompt(m.text,p?.name||'Traveler');
+      try{
+        const m=JSON.parse(dec.decode(payload));
+        const who=p?.name||'Traveler';
+        if(m.type==='direction'){ showPrompt(m.text,who); addChat(m.text,'them',true); }
+        else if(m.type==='chat'){ addChat(m.text,'them'); if(!chatOpen) toast('💬 '+m.text,4000); }
       }catch{}
     })
     .on(LK.RoomEvent.ConnectionQualityChanged,(q,p)=>{
       if(p?.isLocal&&q===LK.ConnectionQuality.Poor){ toast('Weak signal here'); logEvent('Poor signal'); }
     })
     .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Signal dropped — reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); logEvent('Reconnecting'); })
-    .on(LK.RoomEvent.Reconnected,()=>{ $('waitBox').classList.add('hide'); toast('Back online'); });
+    .on(LK.RoomEvent.Reconnected,async()=>{ $('waitBox').classList.add('hide'); attachLocal(); await setupZoom(); toast('Back online'); });
 }
 
 function showPrompt(text,who){
@@ -361,6 +540,41 @@ function showPrompt(text,who){
   promptTimeout=setTimeout(()=>$('promptBox').classList.remove('on'),9000);
 }
 
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function addChat(text,who,isDirection){
+  chatLog.push({at:secs,time:hhmm(),from:who==='me'?'guide':'traveler',text,direction:!!isDirection});
+  const body=$('chatBody');
+  const empty=body.querySelector('.chatEmpty'); if(empty) empty.remove();
+  const d=document.createElement('div');
+  d.className='msg '+(who==='me'?'me':'them');
+  d.innerHTML=escapeHtml(text)+`<span class="t">${isDirection?'direction · ':''}${hhmm()}</span>`;
+  body.appendChild(d);
+  body.scrollTop=body.scrollHeight;
+  if(who!=='me'&&!chatOpen){ unread++; $('chatBadge').textContent=unread; $('chatBadge').classList.add('on'); }
+}
+function sendChat(text){
+  if(!text.trim()||!room) return;
+  room.localParticipant.publishData(enc.encode(JSON.stringify({type:'chat',text:text.trim()})),{reliable:true});
+  addChat(text.trim(),'me');
+}
+$('cChat').addEventListener('click',()=>{
+  chatOpen=true;
+  $('chatPanel').classList.add('on');
+  $('bottomBar').classList.add('hide');
+  $('zoomRail').classList.add('hide');
+  unread=0; $('chatBadge').classList.remove('on');
+  $('chatBody').scrollTop=$('chatBody').scrollHeight;
+});
+$('chatClose').addEventListener('click',()=>{
+  chatOpen=false;
+  $('chatPanel').classList.remove('on');
+  $('bottomBar').classList.remove('hide');
+  $('zoomRail').classList.remove('hide');
+});
+$('chatSend').addEventListener('click',()=>{ sendChat($('chatIn').value); $('chatIn').value=''; });
+$('chatIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendChat($('chatIn').value); $('chatIn').value=''; } });
+document.querySelectorAll('.quick').forEach(b=>b.addEventListener('click',()=>sendChat(b.textContent)));
+
 function startTimer(){
   timerInt=setInterval(()=>{
     secs++;
@@ -370,9 +584,7 @@ function startTimer(){
     $('tBatt').textContent=b!=null?b+'%':'—';
   },1000);
 }
-
 function logEvent(ev){ events.push({at:secs,ev}); }
-
 document.querySelectorAll('.note').forEach(b=>b.addEventListener('click',()=>{
   const ev=b.dataset.ev;
   notes[ev]=(notes[ev]||0)+1;
@@ -386,15 +598,6 @@ $('cMic').addEventListener('click',async()=>{
   await room.localParticipant.setMicrophoneEnabled(micOn);
   $('cMic').textContent=micOn?'Mute':'Unmute';
   $('cMic').classList.toggle('off',!micOn);
-});
-$('cFlip').addEventListener('click',async()=>{
-  facing=facing==='environment'?'user':'environment';
-  try{
-    await room.localParticipant.setCameraEnabled(false);
-    await room.localParticipant.setCameraEnabled(true,{facingMode:facing});
-    attachLocal();
-    toast(facing==='environment'?'Rear camera — the street':'Front camera — your face');
-  }catch{ toast('Could not switch camera'); }
 });
 $('cLeave').addEventListener('click',end);
 
@@ -410,6 +613,7 @@ async function end(){
   $('sDrops').textContent=(notes['Stuttered']||0)+(notes['Lost signal']||0);
   $('sQuiet').textContent=notes['Went quiet']||0;
   $('sGood').textContent=notes['Great moment']||0;
+  $('sChat').textContent=chatLog.length;
   $('live').classList.remove('on');
   $('summary').classList.add('on');
 }
@@ -424,7 +628,7 @@ $('btnDownload').addEventListener('click',()=>{
     earned_baht:Math.round(secs*(RATE/60)*(1-FEE)),
     battery_used_pct:bUsed,
     counts:{...notes},
-    events,
+    events, chat:chatLog,
     debrief:{ best:$('dBest').value, annoying:$('dBad').value, again_and_price:$('dAgain').value }
   };
   const a=document.createElement('a');
