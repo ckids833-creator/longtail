@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#070B0A">
 <meta name="robots" content="noindex">
-<title>Walk for Longtail — Join guides</title>
+<title>Guides — Longtail</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,751 +14,581 @@
 <link rel="stylesheet" href="theme.css">
 <style>
   body{padding-bottom:var(--demo-h,0px);}
-  .page{max-width:1080px;}
 
-  .split{display:grid;gap:26px;grid-template-columns:1fr;align-items:start;}
-  @media (min-width:980px){ .split{grid-template-columns:1.05fr .95fr;gap:34px;} }
+  .toolbar{
+    position:sticky;top:calc(var(--nav-h) + 8px);z-index:30;
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:12px;border-radius:var(--r-lg);margin-bottom:26px;
+  }
+  .toolbar .searchwrap{position:relative;flex:1;min-width:200px;}
+  .toolbar .mag{position:absolute;left:15px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none;}
+  #q{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-line);
+     border-radius:999px;padding:13px 16px 13px 40px;color:var(--paper);font-size:14.5px;
+     transition:border-color .25s,background .25s,box-shadow .25s;}
+  #q::placeholder{color:var(--faint);}
+  #q:focus{outline:none;border-color:var(--green);background:rgba(87,211,146,.07);
+           box-shadow:0 0 0 3px var(--glow-soft);}
+  .sorts{display:flex;gap:6px;flex-wrap:wrap;}
 
-  .panel{border-radius:var(--r-xl);padding:clamp(20px,3vw,30px);}
+  .count{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:16px;}
 
-  /* tabs */
-  .tabs{display:flex;gap:4px;padding:4px;border-radius:999px;margin-bottom:24px;
-    background:rgba(255,255,255,.04);border:1px solid var(--glass-line);}
-  .tab{flex:1;padding:12px;border-radius:999px;font-size:14px;font-weight:600;color:var(--dim);
-    transition:all .35s var(--ease);}
-  .tab.on{background:rgba(87,211,146,.16);color:var(--green-soft);
-    box-shadow:inset 0 0 0 1px rgba(87,211,146,.34);}
+  .glist{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));}
 
-  .pane{display:none;animation:fade-up .5s var(--ease-out);}
-  .pane.on{display:block;}
-  @keyframes fade-up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  .gcard{
+    position:relative;text-align:left;border-radius:var(--r-lg);padding:18px;cursor:pointer;
+    background:var(--glass);border:1px solid var(--glass-line);
+    display:flex;flex-direction:column;gap:13px;
+  }
+  .gcard .top{display:flex;gap:13px;align-items:flex-start;}
+  .gcard .top .t{flex:1;min-width:0;}
+  .gcard .top h3{font-size:16.5px;font-weight:650;display:flex;align-items:center;
+    gap:7px;flex-wrap:wrap;line-height:1.25;}
+  .gcard .handle{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .gcard .where{font-size:12px;color:var(--dim);margin-top:5px;}
+  .gcard .topic{font-size:13.5px;color:var(--dim);line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  .statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .stat{border-radius:var(--r-sm);padding:9px 10px;background:rgba(255,255,255,.04);
+    border:1px solid var(--line);text-align:center;}
+  .stat .k{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);}
+  .stat .v{font-size:14.5px;font-weight:650;margin-top:4px;}
+  .stat .v.green{color:var(--green-soft);}
+
+  .gcard .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding-top:12px;border-top:1px solid var(--line);margin-top:auto;}
+
+  .empty{grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--faint);font-size:14px;}
+
+  /* ---------- join panel at the bottom ---------- */
+  .joinsec{margin-top:60px;padding-top:44px;border-top:1px solid var(--line);}
+  .joinsec .head{text-align:center;max-width:56ch;margin:0 auto 28px;}
+  .joinsec h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:clamp(30px,4.6vw,46px);line-height:.95;margin-bottom:14px;}
+  .joinsec h2 em{font-style:normal;color:var(--green);}
+  .joinsec .head p{font-size:14.5px;color:var(--dim);line-height:1.7;}
+
+  .joinbtnwrap{display:flex;justify-content:center;margin-bottom:8px;}
+  .joinbtnwrap .btn{padding:17px 40px;font-size:16px;}
+
+  .joinform{max-width:640px;margin:26px auto 0;border-radius:var(--r-xl);
+    padding:clamp(20px,3vw,30px);display:none;}
+  .joinform.on{display:block;animation:fade-up .5s var(--ease-out);}
+  @keyframes fade-up{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
 
   .row{display:grid;gap:12px;grid-template-columns:1fr 1fr;}
   @media (max-width:560px){ .row{grid-template-columns:1fr;} }
 
+  .known{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:var(--r-md);
+    background:rgba(87,211,146,.08);border:1px solid rgba(87,211,146,.24);margin-bottom:20px;}
+  .known .t{flex:1;min-width:0;}
+  .known .t b{display:block;font-size:14.5px;}
+  .known .t span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
+
   .check{display:flex;gap:11px;align-items:flex-start;padding:14px;border-radius:var(--r-sm);
     background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer;
-    transition:border-color .25s,background .25s;}
+    transition:border-color .25s;}
   .check:hover{border-color:rgba(87,211,146,.34);}
   .check input{margin-top:2px;width:17px;height:17px;accent-color:var(--green);flex-shrink:0;cursor:pointer;}
   .check span{font-size:13px;color:var(--dim);line-height:1.6;}
   .check b{color:var(--paper);font-weight:600;}
 
-  /* right column */
-  .why{border-radius:var(--r-xl);padding:clamp(20px,3vw,28px);margin-bottom:16px;}
-  .why h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
-    font-size:20px;margin-bottom:16px;}
-  .pt{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line);}
-  .pt:last-child{border-bottom:none;padding-bottom:0;}
-  .pt .n{flex-shrink:0;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
-    background:rgba(87,211,146,.15);color:var(--green-soft);
-    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
-  .pt .t b{display:block;font-size:14.5px;font-weight:600;margin-bottom:4px;}
-  .pt .t p{font-size:13px;color:var(--dim);line-height:1.6;}
-
-  /* earnings calculator */
-  .calc{border-radius:var(--r-xl);padding:clamp(20px,3vw,28px);}
-  .calc h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
-    font-size:20px;margin-bottom:6px;}
-  .calc .sub{font-size:12.5px;color:var(--faint);line-height:1.6;margin-bottom:20px;}
-  .slider{margin-bottom:18px;}
-  .slider .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
-  .slider .top .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--faint);}
-  .slider .top .v{font-size:16px;font-weight:650;color:var(--green-soft);}
-  input[type=range]{width:100%;height:5px;border-radius:99px;appearance:none;cursor:pointer;
-    background:linear-gradient(90deg,var(--green) var(--pct,50%),rgba(255,255,255,.10) var(--pct,50%));}
-  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;
-    background:var(--green-soft);border:3px solid #04120C;box-shadow:0 0 14px var(--glow);cursor:pointer;}
-  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
-    background:var(--green-soft);border:3px solid #04120C;box-shadow:0 0 14px var(--glow);cursor:pointer;border-width:3px;}
-
-  .out{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-  .out div{border-radius:var(--r-sm);padding:14px;background:rgba(87,211,146,.08);
-    border:1px solid rgba(87,211,146,.22);}
-  .out .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--faint);}
-  .out .v{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:27px;
-    color:var(--green-soft);margin-top:5px;line-height:1;}
-
   .note{border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;line-height:1.65;
-    background:rgba(232,163,61,.09);border:1px solid rgba(232,163,61,.26);color:var(--saffron);}
-  .note.plain{background:rgba(255,255,255,.04);border-color:var(--line);color:var(--dim);}
-  .note a{color:inherit;text-decoration:underline;}
+    background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim);}
+  .note.warm{background:rgba(232,163,61,.09);border-color:rgba(232,163,61,.26);color:var(--saffron);}
 
-  .done{text-align:center;padding:14px 0;}
-  .done .tick{width:66px;height:66px;border-radius:50%;margin:0 auto 20px;display:grid;place-items:center;
-    background:rgba(87,211,146,.14);border:1px solid rgba(87,211,146,.4);font-size:30px;
-    animation:pop .55s var(--ease-out);}
+  .done{text-align:center;padding:20px 0;}
+  .done .tick{width:66px;height:66px;border-radius:50%;margin:0 auto 20px;display:grid;
+    place-items:center;background:rgba(87,211,146,.14);border:1px solid rgba(87,211,146,.4);
+    font-size:30px;animation:pop .55s var(--ease-out);}
   @keyframes pop{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
-  .done h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
-    font-size:26px;margin-bottom:10px;}
-  .done p{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:20px;}
+  .done h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:26px;margin-bottom:10px;}
+  .done p{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:22px;}
   .stack > * + *{margin-top:10px;}
 
-  .linkish{color:var(--green-soft);text-decoration:underline;font-size:inherit;padding:0;}
-  .linkish:hover{color:var(--green);}
-
-  .acct-head{display:flex;gap:14px;align-items:center;margin-bottom:20px;}
-  .acct-head h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
-    text-transform:uppercase;font-size:24px;line-height:1;}
-  .acct-head p{font-size:12.5px;color:var(--faint);margin-top:5px;}
-
-  .bk{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--r-sm);
-    background:rgba(255,255,255,.04);border:1px solid var(--line);margin-bottom:8px;}
-  .bk .t{flex:1;min-width:0;}
-  .bk .t b{display:block;font-size:14px;font-weight:600;}
-  .bk .t span{font-size:11.5px;color:var(--faint);}
-  .bk .r{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--green-soft);}
+  /* ---------- detail sheet ---------- */
+  .dt-hero{display:flex;gap:14px;align-items:center;margin-bottom:18px;}
+  .dt-hero .t h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:26px;line-height:1;}
+  .dt-hero .t p{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:5px;}
+  .dt-topic{font-size:17px;font-weight:600;line-height:1.45;margin-bottom:10px;}
+  .dt-blurb{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:18px;}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:9px;margin-bottom:18px;}
+  .fact{border-radius:var(--r-sm);padding:12px 13px;background:rgba(255,255,255,.04);border:1px solid var(--line);}
+  .fact .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);}
+  .fact .v{font-size:15px;font-weight:650;margin-top:5px;}
+  .fact .v.green{color:var(--green-soft);}
+  .sec-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:15px;margin:18px 0 10px;}
 </style>
 </head>
 <body>
 
 <main class="page">
   <header class="page-head reveal in">
-    <h1>Walk your city.<br><em>Get paid by the minute.</em></h1>
+    <h1>The people<br><em>doing the walking</em></h1>
     <p class="lede">
-      Someone who can’t get on a plane pays to see your street through your phone. You walk,
-      they steer. ฿15 a minute, paid out on your own schedule, and you can say no to any
-      walk without giving a reason.
+      Everyone guiding on Longtail, what they walk, what they charge, and how much
+      they’ve actually done. Scroll to the bottom to become one of them.
     </p>
   </header>
 
-  <div class="split">
-    <!-- ============ left: apply / sign in ============ -->
-    <section class="panel glass reveal">
-      <div class="tabs" role="tablist">
-        <button class="tab on" id="tApply" role="tab" aria-selected="true" type="button">Apply to guide</button>
-        <button class="tab" id="tIn" role="tab" aria-selected="false" type="button">Sign in</button>
-      </div>
-
-      <!-- ---------- apply ---------- -->
-      <div class="pane on" id="pApply" role="tabpanel">
-        <form id="applyForm" novalidate>
-          <div class="row">
-            <div class="field">
-              <label class="label" for="fName">Your name</label>
-              <input class="input" id="fName" name="name" autocomplete="name" placeholder="Nont" required>
-              <div class="err-text"></div>
-            </div>
-            <div class="field">
-              <label class="label" for="fContact">Phone or LINE ID</label>
-              <input class="input" id="fContact" name="contact" placeholder="08x xxx xxxx" required>
-              <div class="err-text"></div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="label" for="fEmail">Email</label>
-            <input class="input" id="fEmail" name="email" type="email" autocomplete="email"
-                   placeholder="you@example.com" required>
-            <div class="err-text"></div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label class="label" for="fCity">City</label>
-              <input class="input" id="fCity" name="city" placeholder="Bangkok" required>
-              <div class="err-text"></div>
-            </div>
-            <div class="field">
-              <label class="label" for="fArea">Area you’d walk</label>
-              <input class="input" id="fArea" name="area" placeholder="Yaowarat, Talad Noi" required>
-              <div class="err-text"></div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="label" for="fTopic">What would you show someone?</label>
-            <textarea class="input" id="fTopic" name="topic" required
-              placeholder="One walk you could do well. Where it starts, what happens, what time of day it works."></textarea>
-            <div class="err-text"></div>
-            <p class="hint">This is the part we actually read. Be specific — a street and a time beats a list of landmarks.</p>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label class="label" for="fLangs">Languages</label>
-              <input class="input" id="fLangs" name="langs" placeholder="ไทย, English" required>
-              <div class="err-text"></div>
-            </div>
-            <div class="field">
-              <label class="label" for="fWhen">Usually free</label>
-              <select class="input" id="fWhen" name="when">
-                <option>Weekday evenings</option>
-                <option>Weekday daytime</option>
-                <option>Weekends</option>
-                <option>Most of the time</option>
-                <option>Irregular — I’d say when</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label class="label" for="fPhone">Phone you’d use</label>
-              <input class="input" id="fPhone" name="phone" placeholder="iPhone 13 / Samsung A54">
-            </div>
-            <div class="field">
-              <label class="label" for="fData">Mobile data</label>
-              <select class="input" id="fData" name="data">
-                <option>Unlimited plan</option>
-                <option>Large plan (30GB+)</option>
-                <option>Small plan</option>
-                <option>Not sure</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="check">
-              <input type="checkbox" id="fOk" required>
-              <span><b>I understand how this works.</b> Nothing I stream is recorded. I can decline any
-              request and end any walk at any time, keeping the minutes I earned, without explaining why.
-              I’m responsible for my own safety on the street.</span>
-            </label>
-            <div class="err-text" id="okErr"></div>
-          </div>
-
-          <button class="btn btn-primary btn-block" id="applyGo" type="submit">Send my application</button>
-          <p class="hint" style="text-align:center">
-            Goes to a real person, not a queue. Expect a reply within a few days.
-          </p>
-        </form>
-
-        <div id="applyDone" style="display:none">
-          <div class="done">
-            <div class="tick">✓</div>
-            <h3>Application saved</h3>
-            <p id="doneMsg"></p>
-            <div class="note plain" id="doneNote"></div>
-            <div class="stack" style="margin-top:18px">
-              <button class="btn btn-primary btn-block" id="dlBtn" type="button">Download my answers (JSON)</button>
-              <button class="btn btn-ghost btn-block" id="againBtn" type="button">Edit and send again</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ---------- sign in / create account / signed in ---------- -->
-      <div class="pane" id="pIn" role="tabpanel">
-
-        <!-- signed out: sign in -->
-        <div id="signInBox">
-          <form id="inForm" novalidate>
-            <div class="field">
-              <label class="label" for="iEmail">Email</label>
-              <input class="input" id="iEmail" type="email" autocomplete="username" placeholder="you@example.com">
-              <div class="err-text"></div>
-            </div>
-            <div class="field">
-              <label class="label" for="iPass">Password</label>
-              <input class="input" id="iPass" type="password" autocomplete="current-password" placeholder="••••••••">
-              <div class="err-text"></div>
-            </div>
-            <button class="btn btn-primary btn-block" id="inGo" type="submit">Sign in</button>
-          </form>
-          <p class="hint" style="text-align:center">
-            No account? <button class="linkish" id="toCreate" type="button">Create one</button>
-          </p>
-        </div>
-
-        <!-- signed out: create account -->
-        <div id="createBox" style="display:none">
-          <form id="upForm" novalidate>
-            <div class="row">
-              <div class="field">
-                <label class="label" for="uName">Your name</label>
-                <input class="input" id="uName" autocomplete="name" placeholder="Nont">
-                <div class="err-text"></div>
-              </div>
-              <div class="field">
-                <label class="label" for="uRoom">Walk code</label>
-                <input class="input" id="uRoom" autocomplete="off" autocapitalize="off"
-                       spellcheck="false" placeholder="yaowarat" maxlength="40">
-                <div class="err-text"></div>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label" for="uEmail">Email</label>
-              <input class="input" id="uEmail" type="email" autocomplete="username" placeholder="you@example.com">
-              <div class="err-text"></div>
-            </div>
-            <div class="field">
-              <label class="label" for="uPass">Password</label>
-              <input class="input" id="uPass" type="password" autocomplete="new-password" placeholder="At least 10 characters">
-              <div class="err-text"></div>
-              <p class="hint">Ten characters minimum. Stored hashed with PBKDF2, never in the clear.</p>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label class="label" for="uCity">City</label>
-                <input class="input" id="uCity" placeholder="Bangkok">
-                <div class="err-text"></div>
-              </div>
-              <div class="field">
-                <label class="label" for="uArea">Area you walk</label>
-                <input class="input" id="uArea" placeholder="Yaowarat, Chinatown">
-                <div class="err-text"></div>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label" for="uTopic">Your walk, in one line</label>
-              <input class="input" id="uTopic" placeholder="Yaowarat at dusk — the whole street waking up">
-              <div class="err-text"></div>
-            </div>
-            <button class="btn btn-primary btn-block" id="upGo" type="submit">Create my guide account</button>
-          </form>
-          <p class="hint" style="text-align:center">
-            Already have one? <button class="linkish" id="toSignIn" type="button">Sign in</button>
-          </p>
-        </div>
-
-        <!-- signed in -->
-        <div id="acctBox" style="display:none">
-          <div class="acct-head">
-            <span class="avatar lg" id="acctAv">G</span>
-            <span class="t">
-              <h3 id="acctName">—</h3>
-              <p id="acctWhere">—</p>
-            </span>
-          </div>
-
-          <div class="out" style="margin-bottom:16px">
-            <div><div class="k">Walk code</div><div class="v mono" id="acctRoom" style="font-size:19px">—</div></div>
-            <div><div class="k">Walks done</div><div class="v" id="acctDone">0</div></div>
-          </div>
-
-          <label class="check" style="margin-bottom:14px">
-            <input type="checkbox" id="acctLive">
-            <span><b>Show me as walking now.</b> Puts you on the map as live. Turn it off and you
-            disappear from the directory — you are never obliged to accept anything.</span>
-          </label>
-
-          <div id="acctBookings" style="margin-bottom:16px"></div>
-
-          <div class="stack">
-            <button class="btn btn-primary btn-block" id="acctOpen" type="button">Open the guide app →</button>
-            <button class="btn btn-ghost btn-block" id="acctOut" type="button">Sign out</button>
-          </div>
-        </div>
-
-        <div style="margin-top:26px;padding-top:22px;border-top:1px solid var(--line)">
-          <div class="label">Or just open the walk app with a code</div>
-          <div class="field">
-            <input class="input" id="hostCode" autocomplete="off" autocapitalize="off" spellcheck="false"
-                   placeholder="Walk code, e.g. yaowarat" maxlength="40">
-            <div class="err-text" id="hostErr"></div>
-          </div>
-          <button class="btn btn-glass btn-block" id="hostGo" type="button">Open the guide app →</button>
-          <p class="hint">
-            Takes you to the camera view. Leave the code empty to open the app and set one there.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ right: how it works + calculator ============ -->
-    <aside>
-      <section class="why glass reveal">
-        <h3>How a walk goes</h3>
-        <div class="pt"><span class="n">1</span><span class="t">
-          <b>A request comes in</b>
-          <p>Someone picks your area and a length. You see what they want before you accept — and declining costs you nothing.</p>
-        </span></div>
-        <div class="pt"><span class="n">2</span><span class="t">
-          <b>You walk, they steer</b>
-          <p>Directions land on your screen as big prompts with a buzz. Turn left. Get closer. What’s that. You talk, they listen.</p>
-        </span></div>
-        <div class="pt"><span class="n">3</span><span class="t">
-          <b>Nothing is recorded</b>
-          <p>No video is stored, ever. Not by us, not by them. It matters for the people you film without asking — vendors, passers-by.</p>
-        </span></div>
-        <div class="pt"><span class="n">4</span><span class="t">
-          <b>You end it whenever</b>
-          <p>Uncomfortable, unsafe, or just done — end the walk and keep every minute you earned. No explanation required.</p>
-        </span></div>
-      </section>
-
-      <section class="calc glass reveal">
-        <h3>What it pays</h3>
-        <p class="sub">
-          ฿<span id="rateTxt">15</span> a minute, minus a 12% platform fee. Move the sliders honestly.
-        </p>
-
-        <div class="slider">
-          <div class="top"><span class="k">Minutes per walk</span><span class="v" id="vMin">25 min</span></div>
-          <input type="range" id="sMin" min="10" max="60" step="5" value="25">
-        </div>
-        <div class="slider">
-          <div class="top"><span class="k">Walks per week</span><span class="v" id="vWalks">4</span></div>
-          <input type="range" id="sWalks" min="1" max="25" step="1" value="4">
-        </div>
-        <div class="slider">
-          <div class="top"><span class="k">Hours online per week</span><span class="v" id="vHours">10 h</span></div>
-          <input type="range" id="sHours" min="2" max="50" step="1" value="10">
-        </div>
-
-        <div class="out">
-          <div><div class="k">You keep / week</div><div class="v" id="oWeek">฿0</div></div>
-          <div><div class="k">Per hour online</div><div class="v" id="oHour">฿0</div></div>
-        </div>
-
-        <div class="note" id="calcNote"></div>
-      </section>
-    </aside>
+  <div class="toolbar glass reveal in">
+    <div class="searchwrap">
+      <span class="mag">⌕</span>
+      <input id="q" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Search a guide, a city, a kind of walk…" aria-label="Search guides">
+    </div>
+    <div class="sorts" id="sorts"></div>
   </div>
+
+  <div class="count" id="count"></div>
+  <div class="glist" id="glist"></div>
+
+  <!-- ================= become a guide ================= -->
+  <section class="joinsec reveal" id="joinsec">
+    <div class="head">
+      <h2>Walk your city.<br><em>Get paid by the minute.</em></h2>
+      <p>
+        Someone who can’t get on a plane pays to see your street through your phone.
+        You walk, they steer. ฿15 a minute, and you can end any walk at any time,
+        keeping what you earned, without giving a reason.
+      </p>
+    </div>
+
+    <div class="joinbtnwrap">
+      <button class="btn btn-primary" id="joinToggle" type="button">Join Guides</button>
+    </div>
+    <p class="hint" style="text-align:center" id="joinHint"></p>
+
+    <div class="joinform glass" id="joinForm">
+      <div class="known" id="knownBox">
+        <span class="avatar" id="knownAv">?</span>
+        <span class="t">
+          <b id="knownName">—</b>
+          <span id="knownHandle">—</span>
+        </span>
+        <span class="tag green">already set</span>
+      </div>
+
+      <form id="gForm" novalidate>
+        <div class="field">
+          <label class="label" for="jRoom">Your walk code</label>
+          <input class="input mono" id="jRoom" autocomplete="off" autocapitalize="off"
+                 spellcheck="false" maxlength="40" placeholder="yaowarat">
+          <div class="err-text"></div>
+          <p class="hint">3–40 characters: letters, numbers, dashes, underscores.
+            This is the code travellers use to join your walk.</p>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label class="label" for="jCity">City</label>
+            <input class="input" id="jCity" placeholder="Bangkok">
+            <div class="err-text"></div>
+          </div>
+          <div class="field">
+            <label class="label" for="jArea">Area you walk</label>
+            <input class="input" id="jArea" placeholder="Yaowarat, Chinatown">
+            <div class="err-text"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="jTopic">Your walk, in one line</label>
+          <input class="input" id="jTopic" maxlength="120"
+                 placeholder="Yaowarat at dusk — the whole street waking up">
+          <div class="err-text"></div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="jBlurb">Tell someone what happens</label>
+          <textarea class="input" id="jBlurb"
+            placeholder="Where it starts, what you'll see, what time of day it works best."></textarea>
+          <div class="err-text"></div>
+          <p class="hint">This is the part travellers actually read. A street and a time
+            beats a list of landmarks.</p>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label class="label" for="jLangs">Languages</label>
+            <input class="input" id="jLangs" placeholder="ไทย, English">
+          </div>
+          <div class="field">
+            <label class="label" for="jWhen">Usually free</label>
+            <select class="input" id="jWhen">
+              <option>Weekday evenings</option>
+              <option>Weekday daytime</option>
+              <option>Weekends</option>
+              <option>Most of the time</option>
+              <option>Irregular — I’d say when</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="jExp">Experience</label>
+          <input class="input" id="jExp" maxlength="200"
+                 placeholder="Six years walking people through Chinatown">
+          <p class="hint">Optional. Shown on your card.</p>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label class="label" for="jPhone">Phone you’d use</label>
+            <input class="input" id="jPhone" placeholder="iPhone 13 / Samsung A54">
+          </div>
+          <div class="field">
+            <label class="label" for="jData">Mobile data</label>
+            <select class="input" id="jData">
+              <option>Unlimited plan</option>
+              <option>Large plan (30GB+)</option>
+              <option>Small plan</option>
+              <option>Not sure</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="check">
+            <input type="checkbox" id="jOk">
+            <span><b>I understand how this works.</b> Nothing I stream is recorded. I can decline
+            any request and end any walk at any time, keeping the minutes I earned, without
+            explaining why. I’m responsible for my own safety on the street.</span>
+          </label>
+          <div class="err-text" id="okErr"></div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="joinGo" type="submit">Become a guide</button>
+        <p class="hint" style="text-align:center">
+          Your username, display name and password stay exactly as they are.
+        </p>
+      </form>
+
+      <div id="joinDone" style="display:none">
+        <div class="done">
+          <div class="tick">✓</div>
+          <h3>You’re a guide</h3>
+          <p id="doneMsg"></p>
+          <div class="stack">
+            <a class="btn btn-primary btn-block" href="studio.html">Open your Studio →</a>
+            <button class="btn btn-ghost btn-block" id="doneReload" type="button">Back to the guides</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
+
+<!-- guide detail -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet center" id="detail" role="dialog" aria-modal="true" aria-labelledby="dtTitle">
+  <div class="sheet-head">
+    <div><h2 id="dtTitle">Guide</h2><p id="dtSub"></p></div>
+    <button class="x" data-close type="button" aria-label="Close">✕</button>
+  </div>
+  <div class="sheet-body" id="dtBody"></div>
+  <div class="sheet-foot" id="dtFoot"></div>
+</div>
 
 <script src="config.js"></script>
 <script src="data.js"></script>
 <script>
-(function(){
+LT.start('guides').then(function(user){
   'use strict';
-  LT.boot('guides');
-  LT.load().then(LT.refreshDemoBar);
-
   var $ = function(id){ return document.getElementById(id); };
+  var sort = 'live', q = '';
 
-  /* ---------- tabs ---------- */
-  function tab(which){
-    var apply = which === 'apply';
-    $('tApply').classList.toggle('on', apply);
-    $('tIn').classList.toggle('on', !apply);
-    $('tApply').setAttribute('aria-selected', String(apply));
-    $('tIn').setAttribute('aria-selected', String(!apply));
-    $('pApply').classList.toggle('on', apply);
-    $('pIn').classList.toggle('on', !apply);
+  /* -------------------------------------------------------------- filters */
+  var SORTS = [
+    { key:'live',   label:'Live first' },
+    { key:'rating', label:'Best rated' },
+    { key:'xp',     label:'Most experienced' }
+  ];
+  $('sorts').innerHTML = SORTS.map(function(s){
+    return '<button class="chip' + (s.key===sort?' on':'') + '" data-s="' + s.key + '" type="button">' +
+      s.label + '</button>';
+  }).join('');
+  $('sorts').querySelectorAll('[data-s]').forEach(function(b){
+    b.onclick = function(){
+      sort = b.dataset.s;
+      $('sorts').querySelectorAll('[data-s]').forEach(function(x){
+        x.classList.toggle('on', x.dataset.s === sort);
+      });
+      render();
+    };
+  });
+
+  var tmr;
+  $('q').addEventListener('input', function(e){
+    clearTimeout(tmr);
+    tmr = setTimeout(function(){ q = e.target.value.trim().toLowerCase(); render(); }, 130);
+  });
+
+  /* ---------------------------------------------------------------- cards */
+  function matches(g){
+    if (!q) return true;
+    return (g.name + ' ' + (g.username||'') + ' ' + g.city + ' ' + g.area + ' ' +
+            g.topic + ' ' + g.tags.join(' ')).toLowerCase().indexOf(q) !== -1;
   }
-  $('tApply').onclick = function(){ tab('apply'); };
-  $('tIn').onclick    = function(){ tab('in'); };
-  if (location.hash === '#signin') tab('in');
 
-  /* ---------- application form ---------- */
-  var form = $('applyForm');
-  var required = ['fName','fContact','fEmail','fCity','fArea','fTopic','fLangs'];
+  function sorted(list){
+    var c = list.slice();
+    if (sort === 'rating'){
+      c.sort(function(a,b){ return (b.rating||0) - (a.rating||0) || b.sessions - a.sessions; });
+    } else if (sort === 'xp'){
+      c.sort(function(a,b){ return (b.xp||0) - (a.xp||0); });
+    } else {
+      c.sort(function(a,b){
+        return (b.live?1:0) - (a.live?1:0) || (a.real===b.real ? 0 : (a.real ? -1 : 1));
+      });
+    }
+    return c;
+  }
 
-  function fieldErr(id, msg){
-    var el = $(id);
-    var box = el.parentElement.querySelector('.err-text');
+  function card(g, i){
+    var demo = !g.real ? '<span class="demo-badge">demo</span>' : '';
+    var lvl = LT.level(g.xp || 0);
+    var intoLevel = (g.xp || 0) - Math.pow(lvl - 1, 2) * 100;
+    var span = Math.pow(lvl, 2) * 100 - Math.pow(lvl - 1, 2) * 100;
+    var pct = Math.max(3, Math.min(100, Math.round(intoLevel / span * 100)));
+
+    return '<button class="gcard glass-hover reveal" data-g="' + g.id + '" type="button" ' +
+      'style="transition-delay:' + Math.min(i,10)*45 + 'ms">' +
+      '<div class="top">' +
+        '<span class="avatar lg" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>' +
+        '<span class="t">' +
+          '<h3>' + LT.esc(g.name) + demo +
+            (g.live ? '<span class="live"><i></i>live</span>' : '') + '</h3>' +
+          (g.username ? '<div class="handle">@' + LT.esc(g.username) + '</div>' : '') +
+          '<div class="where">' + LT.esc(g.area) + ' · ' + LT.esc(g.city) + '</div>' +
+          '<div style="margin-top:7px">' + LT.stars(g.rating) + '</div>' +
+        '</span>' +
+      '</div>' +
+
+      '<p class="topic">' + LT.esc(g.topic) + '</p>' +
+
+      '<div class="statrow">' +
+        '<div class="stat"><div class="k">Rate</div><div class="v green">฿' +
+          (g.rate_satang/100) + '<span style="font-size:10px;color:var(--faint)">/min</span></div></div>' +
+        '<div class="stat"><div class="k">Walks</div><div class="v">' + g.sessions + '</div></div>' +
+        '<div class="stat"><div class="k">XP</div><div class="v">' + (g.xp||0) + '</div></div>' +
+      '</div>' +
+
+      '<div>' +
+        '<span class="lvl">level ' + lvl + '</span>' +
+        '<div class="xpbar"><i style="width:' + pct + '%"></i></div>' +
+      '</div>' +
+
+      '<div class="foot">' +
+        '<span class="tags">' + g.tags.slice(0,2).map(function(t){
+          return '<span class="tag">' + LT.esc(t) + '</span>'; }).join('') + '</span>' +
+        '<span style="font-size:12.5px;color:var(--green-soft)">Details →</span>' +
+      '</div>' +
+    '</button>';
+  }
+
+  function render(){
+    var list = sorted(LT.GUIDES.filter(matches));
+    $('count').textContent = list.length + ' of ' + LT.GUIDES.length + ' guides' +
+      (LT.liveGuides().length ? ' · ' + LT.liveGuides().length + ' walking now' : '');
+    $('glist').innerHTML = list.length
+      ? list.map(card).join('')
+      : '<div class="empty">No guide matches that. Try clearing the search.</div>';
+    $('glist').querySelectorAll('[data-g]').forEach(function(b){
+      b.onclick = function(){ openGuide(b.dataset.g); };
+    });
+    LT.watchReveals($('glist'));
+  }
+
+  /* ---------------------------------------------------------- detail sheet */
+  var openIds = [];
+  function show(id){ $(id).classList.add('on'); $('scrim').classList.add('on'); openIds.push(id); }
+  function hide(id){
+    $(id).classList.remove('on');
+    openIds = openIds.filter(function(x){ return x !== id; });
+    if (!openIds.length) $('scrim').classList.remove('on');
+  }
+  $('scrim').onclick = function(){ while (openIds.length) hide(openIds[openIds.length-1]); };
+  document.querySelectorAll('[data-close]').forEach(function(b){
+    b.onclick = function(){ hide(b.closest('.sheet').id); };
+  });
+  LT.escClose(function(){ if (openIds.length) hide(openIds[openIds.length-1]); });
+
+  function openGuide(gid){
+    var g = LT.guide(gid);
+    if (!g) return;
+    var lvl = LT.level(g.xp || 0);
+    var mine = LT.auth.guide() && LT.auth.guide().id === g.id;
+
+    $('dtTitle').textContent = g.name;
+    $('dtSub').textContent = g.area + ' · ' + g.city;
+
+    $('dtBody').innerHTML =
+      '<div class="dt-hero">' +
+        '<span class="avatar lg" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>' +
+        '<span class="t">' +
+          '<h2>' + LT.esc(g.name) + '</h2>' +
+          '<p>' + (g.username ? '@' + LT.esc(g.username) : 'no account linked') + '</p>' +
+          '<div style="margin-top:8px">' + LT.stars(g.rating) + '</div>' +
+        '</span>' +
+        (!g.real ? '<span class="demo-badge">demo</span>' : '') +
+      '</div>' +
+
+      '<p class="dt-topic">' + LT.esc(g.topic) + '</p>' +
+      '<p class="dt-blurb">' + LT.esc(g.blurb) + '</p>' +
+
+      '<div class="facts">' +
+        '<div class="fact"><div class="k">Rate</div><div class="v green">฿' +
+          (g.rate_satang/100) + ' / min</div></div>' +
+        '<div class="fact"><div class="k">Walks done</div><div class="v">' + g.sessions + '</div></div>' +
+        '<div class="fact"><div class="k">Experience</div><div class="v">' +
+          (g.xp||0) + ' XP</div></div>' +
+        '<div class="fact"><div class="k">Level</div><div class="v green">' + lvl + '</div></div>' +
+        '<div class="fact"><div class="k">Languages</div><div class="v" style="font-size:13px">' +
+          LT.esc(g.langs.join(' / ') || '—') + '</div></div>' +
+        '<div class="fact"><div class="k">Recording</div><div class="v" style="font-size:13px">Never</div></div>' +
+      '</div>' +
+
+      (g.experience
+        ? '<div class="sec-title">Background</div><p class="dt-blurb">' +
+          LT.esc(g.experience) + '</p>'
+        : '') +
+
+      (g.tags.length
+        ? '<div class="tags">' + g.tags.map(function(t){
+            return '<span class="tag green">' + LT.esc(t) + '</span>'; }).join('') + '</div>'
+        : '');
+
+    $('dtFoot').innerHTML = mine
+      ? '<a class="btn btn-primary btn-block" href="studio.html">This is you — open Studio →</a>'
+      : '<div class="stack">' +
+          '<a class="btn btn-primary btn-block" href="explore.html?guide=' +
+            encodeURIComponent(g.id) + '">See on the map & book →</a>' +
+          (g.live && g.room
+            ? '<a class="btn btn-glass btn-block" href="' + LT.watchUrl(g.room) +
+              '">Watch this walk now →</a>'
+            : '') +
+        '</div>';
+
+    show('detail');
+  }
+
+  /* ------------------------------------------------------- become a guide */
+  function paintJoin(){
+    var u = LT.auth.user();
+    if (LT.auth.isGuide()){
+      $('joinToggle').textContent = 'Open your Studio';
+      $('joinToggle').onclick = function(){ location.href = 'studio.html'; };
+      $('joinHint').textContent = 'You already guide on Longtail.';
+      return;
+    }
+    $('joinHint').textContent = 'You stay signed in as @' + u.username + '. Nothing about your account changes.';
+    $('knownAv').textContent = (u.display_name || '?').slice(0,1).toUpperCase();
+    $('knownAv').setAttribute('style', LT.avatarStyle(u.avatar_hue));
+    $('knownName').textContent = u.display_name;
+    $('knownHandle').textContent = '@' + u.username;
+
+    $('joinToggle').onclick = function(){
+      var open = $('joinForm').classList.toggle('on');
+      $('joinToggle').textContent = open ? 'Not right now' : 'Join Guides';
+      if (open) $('joinForm').scrollIntoView({ behavior:'smooth', block:'start' });
+    };
+  }
+
+  function fieldErr(inputId, msg){
+    var el = $(inputId);
+    var field = el.closest('.field');
+    var box = field && field.querySelector('.err-text');
     el.classList.toggle('bad', !!msg);
     if (box){ box.textContent = msg || ''; box.classList.toggle('on', !!msg); }
-    return !msg;
   }
 
-  required.forEach(function(id){
-    $(id).addEventListener('input', function(){ fieldErr(id, ''); });
+  ['jRoom','jCity','jArea','jTopic','jBlurb'].forEach(function(f){
+    $(f).addEventListener('input', function(){ fieldErr(f, ''); });
   });
 
-  form.addEventListener('submit', function(e){
+  $('gForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var ok = true, firstBad = null;
+    var ok = true, first = null;
+    var need = function(fid, msg, test){
+      var v = $(fid).value.trim();
+      var bad = test ? !test(v) : !v;
+      fieldErr(fid, bad ? msg : '');
+      if (bad){ ok = false; if (!first) first = fid; }
+      return v;
+    };
 
-    required.forEach(function(id){
-      var v = $(id).value.trim();
-      var msg = '';
-      if (!v) msg = 'Needed.';
-      else if (id === 'fEmail' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) msg = 'That email doesn’t look right.';
-      else if (id === 'fTopic' && v.length < 25) msg = 'A bit more — what would we actually see?';
-      if (msg){ ok = false; if (!firstBad) firstBad = id; }
-      fieldErr(id, msg);
-    });
+    var room  = need('jRoom', 'Pick a walk code: 3–40 letters, numbers, dashes or underscores.',
+                     function(v){ return LT.validCode(v); });
+    var city  = need('jCity', 'Which city?');
+    var area  = need('jArea', 'Which part of it?');
+    var topic = need('jTopic', 'One line about the walk — at least 10 characters.',
+                     function(v){ return v.length >= 10; });
+    var blurb = need('jBlurb', 'A couple of sentences, so someone knows what they are buying.',
+                     function(v){ return v.length >= 20; });
 
-    var agreed = $('fOk').checked;
-    $('okErr').textContent = agreed ? '' : 'Please confirm you’ve read this.';
-    $('okErr').classList.toggle('on', !agreed);
-    if (!agreed){ ok = false; if (!firstBad) firstBad = 'fOk'; }
+    if (!$('jOk').checked){
+      $('okErr').textContent = 'Please confirm you’ve read this.';
+      $('okErr').classList.add('on');
+      ok = false; if (!first) first = 'jOk';
+    } else {
+      $('okErr').classList.remove('on');
+    }
 
     if (!ok){
-      $(firstBad).scrollIntoView({ behavior:'smooth', block:'center' });
-      if ($(firstBad).focus) $(firstBad).focus({ preventScroll:true });
-      LT.toast('A few fields still need filling in.', 'bad');
-      return;
+      $(first).scrollIntoView({ behavior:'smooth', block:'center' });
+      if ($(first).focus) $(first).focus({ preventScroll:true });
+      return LT.toast('A few fields still need filling in.', 'bad');
     }
 
-    var data = {
-      submittedAt: new Date().toISOString(),
-      name: $('fName').value.trim(),
-      contact: $('fContact').value.trim(),
-      email: $('fEmail').value.trim(),
-      city: $('fCity').value.trim(),
-      area: $('fArea').value.trim(),
-      topic: $('fTopic').value.trim(),
-      languages: $('fLangs').value.trim(),
-      availability: $('fWhen').value,
-      phone: $('fPhone').value.trim(),
-      dataPlan: $('fData').value,
-      acknowledgedTerms: true
-    };
+    var btn = $('joinGo');
+    btn.disabled = true; btn.textContent = 'Setting you up…';
 
-    $('applyGo').disabled = true;
-    $('applyGo').textContent = 'Sending…';
-
-    LT.api('POST', '/api/applications', data)
-      .then(function(res){ finish(data, res.id); })
-      .catch(function(err){
-        // Never lose someone's application because the server was down.
-        try {
-          var all = JSON.parse(localStorage.getItem('lt_guide_applications') || '[]');
-          all.push(data);
-          localStorage.setItem('lt_guide_applications', JSON.stringify(all));
-        } catch (e) { /* private browsing — the download still works */ }
-
-        if (err.field && $(fieldFor(err.field))){
-          fieldErr(fieldFor(err.field), err.message);
-          $('applyGo').disabled = false;
-          $('applyGo').textContent = 'Send my application';
-          LT.toast(err.message, 'bad');
-          return;
-        }
-        finish(data, null, err.message);
-      });
+    LT.auth.joinAsGuide({
+      room: room, city: city, area: area, topic: topic, blurb: blurb,
+      experience: $('jExp').value.trim(),
+      languages: $('jLangs').value.trim() || 'English',
+      tags: []
+    }).then(function(res){
+      $('gForm').style.display = 'none';
+      $('knownBox').style.display = 'none';
+      $('joinDone').style.display = 'block';
+      $('doneMsg').textContent =
+        'You keep @' + LT.auth.user().username + ' and everything on it. Your walk code is ' +
+        res.room + '. Studio is now in the menu at the top.';
+      $('joinToggle').style.display = 'none';
+      $('joinHint').textContent = '';
+      LT.renderNav('guides');           // Studio appears immediately
+      LT.toast('You are a guide. Studio is in the nav.', 'good');
+      $('joinDone').scrollIntoView({ behavior:'smooth', block:'center' });
+      LT.load().then(render);
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = 'Become a guide';
+      if (err.field === 'room') fieldErr('jRoom', err.message);
+      else LT.toast(err.message, 'bad');
+    });
   });
 
-  /* map a server field name back onto the input that produced it */
-  function fieldFor(name){
-    return ({ name:'fName', contact:'fContact', email:'fEmail', city:'fCity',
-              area:'fArea', topic:'fTopic', langs:'fLangs' })[name] || '';
-  }
+  $('doneReload').onclick = function(){
+    $('joinForm').classList.remove('on');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  function finish(data, serverId, failure){
-    $('doneMsg').textContent = 'Thanks, ' + data.name + '. We’ve got ' + data.area +
-      ' in ' + data.city + ' down as your patch.';
-    $('doneNote').innerHTML = serverId
-      ? 'Saved on the server. Your reference is <span class="mono">' + LT.esc(serverId) + '</span>.'
-      : 'The server could not be reached' + (failure ? ' (' + LT.esc(failure) + ')' : '') +
-        ', so your answers are stored in this browser only. Download them and send them over ' +
-        'so nothing is lost.';
-    $('doneNote').className = serverId ? 'note plain' : 'note';
-
-    form.style.display = 'none';
-    $('applyDone').style.display = 'block';
-    $('applyDone').scrollIntoView({ behavior:'smooth', block:'center' });
-    LT.toast(serverId ? 'Application sent.' : 'Saved on this device only.', serverId ? 'good' : 'bad');
-
-    $('dlBtn').onclick = function(){
-      var blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'longtail-guide-' +
-        data.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '.json';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    };
-    $('againBtn').onclick = function(){
-      $('applyDone').style.display = 'none';
-      form.style.display = 'block';
-      $('applyGo').disabled = false;
-      $('applyGo').textContent = 'Send my application';
-      form.scrollIntoView({ behavior:'smooth', block:'start' });
-    };
-  }
-
-  /* ---------- sign in / create account ---------- */
-
-  function showAuth(which){
-    $('signInBox').style.display = which === 'in' ? 'block' : 'none';
-    $('createBox').style.display = which === 'create' ? 'block' : 'none';
-    $('acctBox').style.display  = which === 'acct' ? 'block' : 'none';
-  }
-  $('toCreate').onclick  = function(){ showAuth('create'); };
-  $('toSignIn').onclick  = function(){ showAuth('in'); };
-
-  /* mark the input a server error points at */
-  function markServerErr(err, map){
-    var el = map[err.field] && $(map[err.field]);
-    if (el){
-      el.classList.add('bad');
-      var box = el.parentElement.querySelector('.err-text');
-      if (box){ box.textContent = err.message; box.classList.add('on'); }
-      el.focus();
-      return true;
-    }
-    return false;
-  }
-  function clearErrs(root){
-    root.querySelectorAll('.input.bad').forEach(function(i){ i.classList.remove('bad'); });
-    root.querySelectorAll('.err-text.on').forEach(function(b){ b.classList.remove('on'); });
-  }
-
-  $('inForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    clearErrs($('signInBox'));
-    var btn = $('inGo');
-    btn.disabled = true; btn.textContent = 'Signing in…';
-
-    LT.auth.login($('iEmail').value.trim(), $('iPass').value)
-      .then(function(guide){
-        $('iPass').value = '';
-        LT.toast('Signed in as ' + guide.name + '.', 'good');
-        renderAccount(guide);
-      })
-      .catch(function(err){
-        if (!markServerErr(err, { email:'iEmail', password:'iPass' })) LT.toast(err.message, 'bad');
-      })
-      .then(function(){ btn.disabled = false; btn.textContent = 'Sign in'; });
+  /* ------------------------------------------------------------------ go */
+  paintJoin();
+  render();
+  LT.load().then(function(state){
+    LT.refreshDemoBar();
+    render();
+    if (!state.online) LT.toast('Live directory unavailable — showing sample guides.', 'bad');
   });
-
-  $('upForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    clearErrs($('createBox'));
-    var btn = $('upGo');
-    btn.disabled = true; btn.textContent = 'Creating…';
-
-    LT.auth.signup({
-      name:  $('uName').value.trim(),
-      email: $('uEmail').value.trim(),
-      password: $('uPass').value,
-      city:  $('uCity').value.trim(),
-      area:  $('uArea').value.trim(),
-      topic: $('uTopic').value.trim(),
-      room:  $('uRoom').value.trim() || undefined,
-      langs: ['English']
-    })
-      .then(function(guide){
-        $('uPass').value = '';
-        LT.toast('Account created. You are signed in.', 'good');
-        renderAccount(guide);
-      })
-      .catch(function(err){
-        var mapped = markServerErr(err, {
-          name:'uName', email:'uEmail', password:'uPass',
-          city:'uCity', area:'uArea', topic:'uTopic', room:'uRoom'
-        });
-        if (!mapped) LT.toast(err.message, 'bad');
-      })
-      .then(function(){ btn.disabled = false; btn.textContent = 'Create my guide account'; });
-  });
-
-  /* ---------- signed-in panel ---------- */
-
-  function renderAccount(guide){
-    showAuth('acct');
-    $('acctAv').textContent = guide.initial || guide.name.slice(0,1).toUpperCase();
-    $('acctAv').setAttribute('style', LT.avatarStyle(guide.hue || 150));
-    $('acctName').textContent = guide.name;
-    $('acctWhere').textContent = guide.area + ' · ' + guide.city;
-    $('acctRoom').textContent = guide.room || 'not set';
-    $('acctDone').textContent = guide.sessions || 0;
-    $('acctLive').checked = !!guide.live;
-
-    $('acctLive').onchange = function(){
-      var on = $('acctLive').checked;
-      $('acctLive').disabled = true;
-      LT.api('PATCH', '/api/guides/me', { live: on })
-        .then(function(res){
-          LT.toast(res.guide.live ? 'You are on the map as walking now.' : 'You are off the map.',
-                   res.guide.live ? 'good' : '');
-        })
-        .catch(function(err){ $('acctLive').checked = !on; LT.toast(err.message, 'bad'); })
-        .then(function(){ $('acctLive').disabled = false; });
-    };
-
-    $('acctOpen').onclick = function(){
-      location.href = guide.room ? 'index.html?room=' + encodeURIComponent(guide.room) : 'index.html';
-    };
-
-    $('acctOut').onclick = function(){
-      LT.auth.logout().then(function(){
-        LT.toast('Signed out.');
-        showAuth('in');
-      });
-    };
-
-    LT.api('GET', '/api/guides/me/bookings')
-      .then(function(res){
-        var open = (res.bookings || []).filter(function(b){
-          return b.status === 'requested' || b.status === 'accepted';
-        });
-        $('acctBookings').innerHTML = open.length
-          ? '<div class="label">Waiting on you</div>' + open.slice(0,5).map(function(b){
-              return '<div class="bk"><span class="t"><b>' + LT.esc(b.traveler_name) + '</b>' +
-                '<span>' + b.minutes + ' min · ' + LT.esc(b.status) + '</span></span>' +
-                '<span class="r">' + LT.baht(b.hold_satang / 100) + '</span></div>';
-            }).join('')
-          : '<div class="note plain">No walk requests yet.</div>';
-      })
-      .catch(function(){ $('acctBookings').innerHTML = ''; });
-  }
-
-  /* resume an existing session on load */
-  if (LT.auth.signedIn()){
-    tab('in');
-    LT.auth.me()
-      .then(renderAccount)
-      .catch(function(){ showAuth('in'); });
-  }
-
-  $('hostCode').addEventListener('input', function(){
-    $('hostCode').classList.remove('bad');
-    $('hostErr').classList.remove('on');
-  });
-  $('hostCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') openGuideApp(); });
-  $('hostGo').onclick = openGuideApp;
-
-  function openGuideApp(){
-    var c = $('hostCode').value.trim();
-    if (!c){ location.href = 'index.html'; return; }
-    if (!LT.validCode(c)){
-      $('hostCode').classList.add('bad');
-      $('hostErr').textContent = '3–40 characters: letters, numbers, dashes, underscores.';
-      $('hostErr').classList.add('on');
-      return;
-    }
-    location.href = 'index.html?room=' + encodeURIComponent(c);
-  }
-
-  /* ---------- earnings calculator ---------- */
-  var FEE = 0.12;
-  $('rateTxt').textContent = LT.RATE_BAHT_PER_MIN;
-
-  function paint(el){
-    var pct = (el.value - el.min) / (el.max - el.min) * 100;
-    el.style.setProperty('--pct', pct + '%');
-  }
-
-  function calc(){
-    var mins  = +$('sMin').value;
-    var walks = +$('sWalks').value;
-    var hours = +$('sHours').value;
-
-    $('vMin').textContent   = mins + ' min';
-    $('vWalks').textContent = walks;
-    $('vHours').textContent = hours + ' h';
-    [$('sMin'), $('sWalks'), $('sHours')].forEach(paint);
-
-    var gross  = mins * walks * LT.RATE_BAHT_PER_MIN;
-    var net    = Math.round(gross * (1 - FEE));
-    var perHr  = Math.round(net / hours);
-    var busy   = (mins * walks) / (hours * 60);
-
-    $('oWeek').textContent = LT.baht(net);
-    $('oHour').textContent = LT.baht(perHr);
-
-    var note = $('calcNote');
-    if (perHr < 60){
-      note.className = 'note';
-      note.innerHTML = 'At this density you’re earning <b>' + LT.baht(perHr) +
-        ' an hour online</b> — below Thailand’s minimum wage. Walking pays well; ' +
-        'waiting pays nothing. Only go online when you would be out anyway.';
-    } else if (busy > 0.55){
-      note.className = 'note plain';
-      note.innerHTML = 'That’s <b>' + Math.round(busy*100) + '% of your online time spent walking</b>. ' +
-        'Optimistic for a new marketplace — worth checking against what you actually get.';
-    } else {
-      note.className = 'note plain';
-      note.innerHTML = 'Walking time is <b>' + Math.round(busy*100) + '%</b> of your time online. ' +
-        'The other ' + (100 - Math.round(busy*100)) + '% pays nothing, so treat this as a top-up, ' +
-        'not a wage.';
-    }
-  }
-
-  ['sMin','sWalks','sHours'].forEach(function(id){
-    $(id).addEventListener('input', calc);
-  });
-  calc();
-})();
+}).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
 </script>
 </body>
 </html>

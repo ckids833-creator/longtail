@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<meta name="robots" content="noindex">
+<title>Sign in — Longtail</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Google Identity Services. Renders the button and hands us an ID token,
+     which the Worker verifies against Google's public keys. No secret. -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{min-height:100%;}
+  .wrap{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;
+    justify-content:center;padding:calc(var(--nav-h) + 30px) 18px 60px;}
+  .card{width:min(460px,100%);border-radius:var(--r-xl);padding:clamp(24px,4vw,36px);}
+
+  .lede{text-align:center;margin-bottom:26px;}
+  .lede .mark{width:46px;height:46px;border-radius:14px;font-size:24px;margin:0 auto 16px;}
+  .lede h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:clamp(30px,5vw,40px);line-height:.95;margin-bottom:10px;}
+  .lede h1 em{font-style:normal;color:var(--green);}
+  .lede p{font-size:13.5px;color:var(--dim);line-height:1.65;}
+
+  .step{display:none;animation:fade-up .45s var(--ease-out);}
+  .step.on{display:block;}
+  @keyframes fade-up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+  .gwrap{display:flex;justify-content:center;min-height:44px;margin-bottom:6px;}
+  .gnote{font-size:12px;color:var(--faint);text-align:center;line-height:1.6;margin-bottom:4px;}
+
+  .or{display:flex;align-items:center;gap:12px;margin:22px 0;color:var(--faint);
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;}
+  .or::before,.or::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .swap{text-align:center;font-size:13px;color:var(--dim);margin-top:18px;}
+  .linkish{color:var(--green-soft);text-decoration:underline;font-size:inherit;padding:0;}
+  .linkish:hover{color:var(--green);}
+
+  /* username availability */
+  .uwrap{position:relative;}
+  .ustate{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:12px;
+    font-family:'JetBrains Mono',monospace;pointer-events:none;}
+  .ustate.ok{color:var(--green-soft);}
+  .ustate.no{color:#FF8A76;}
+  .ustate.busy{color:var(--faint);}
+  .input.withstate{padding-right:96px;}
+  .at{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--faint);
+    font-family:'JetBrains Mono',monospace;font-size:15px;pointer-events:none;}
+  .input.withat{padding-left:31px;font-family:'JetBrains Mono',monospace;}
+
+  .suggest{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+  .suggest button{padding:6px 11px;border-radius:999px;background:var(--glass);
+    border:1px solid var(--glass-line);font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:var(--dim);transition:all .2s;}
+  .suggest button:hover{border-color:var(--green);color:var(--green-soft);}
+
+  .steps-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px;}
+  .steps-dots i{width:22px;height:3px;border-radius:2px;background:rgba(255,255,255,.12);transition:background .3s;}
+  .steps-dots i.on{background:var(--green);}
+
+  .backlink{font-size:12.5px;color:var(--faint);margin-top:14px;display:block;text-align:center;}
+  .backlink:hover{color:var(--paper);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <main class="card glass">
+
+    <div class="lede">
+      <div class="mark">L</div>
+      <h1 id="ledeTitle">Walk Thailand<br><em>with someone there</em></h1>
+      <p id="ledeSub">You need an account to watch a walk or to guide one.</p>
+    </div>
+
+    <!-- ============ step: choose a way in ============ -->
+    <section class="step on" id="stepStart">
+      <div class="gwrap" id="gButton"></div>
+      <p class="gnote" id="gNote">Loading Google sign-in…</p>
+
+      <div class="or">or</div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label class="label" for="lHandle">Username</label>
+          <div class="uwrap">
+            <span class="at">@</span>
+            <input class="input withat" id="lHandle" autocomplete="username"
+                   autocapitalize="off" spellcheck="false" placeholder="yourname">
+          </div>
+          <div class="err-text"></div>
+        </div>
+        <div class="field">
+          <label class="label" for="lPass">Password</label>
+          <input class="input" id="lPass" type="password" autocomplete="current-password"
+                 placeholder="••••••••">
+          <div class="err-text"></div>
+        </div>
+        <button class="btn btn-primary btn-block" id="loginGo" type="submit">Sign in</button>
+      </form>
+
+      <p class="swap">
+        New here? <button class="linkish" id="toSignup" type="button">Create an account</button>
+      </p>
+    </section>
+
+    <!-- ============ step 1 of manual signup: username + password ============ -->
+    <section class="step" id="stepCreds">
+      <div class="steps-dots"><i class="on"></i><i></i></div>
+      <form id="credsForm" novalidate>
+        <div class="field">
+          <label class="label" for="sUser">Pick a username</label>
+          <div class="uwrap">
+            <span class="at">@</span>
+            <input class="input withat withstate" id="sUser" autocomplete="username"
+                   autocapitalize="off" spellcheck="false" maxlength="20" placeholder="yourname">
+            <span class="ustate" id="uState"></span>
+          </div>
+          <div class="err-text"></div>
+          <p class="hint">3–20 characters: lowercase letters, numbers, underscore.
+            This one has to be yours alone.</p>
+          <div class="suggest" id="uSuggest"></div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="sPass">Password</label>
+          <input class="input" id="sPass" type="password" autocomplete="new-password"
+                 placeholder="At least 8 characters">
+          <div class="err-text"></div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="credsGo" type="submit">Next →</button>
+      </form>
+      <a class="backlink" id="credsBack" href="#">← back</a>
+    </section>
+
+    <!-- ============ step 2 / google finish: display name ============ -->
+    <section class="step" id="stepName">
+      <div class="steps-dots" id="nameDots"><i class="on"></i><i class="on"></i></div>
+
+      <div class="field">
+        <label class="label" for="dName">What should people call you?</label>
+        <input class="input" id="dName" autocomplete="nickname" maxlength="60" placeholder="Nont">
+        <div class="err-text" id="dNameErr"></div>
+        <p class="hint" id="dNameHint">
+          Your display name. It can be anything, and it doesn’t have to be unique —
+          your <span class="mono" id="handleEcho">@username</span> is the one that does.
+        </p>
+      </div>
+
+      <!-- shown only on the Google path, where the username is chosen here too -->
+      <div class="field" id="gUserField" style="display:none">
+        <label class="label" for="gUser">And a username</label>
+        <div class="uwrap">
+          <span class="at">@</span>
+          <input class="input withat withstate" id="gUser" autocapitalize="off"
+                 spellcheck="false" maxlength="20" placeholder="yourname">
+          <span class="ustate" id="gState"></span>
+        </div>
+        <div class="err-text"></div>
+        <div class="suggest" id="gSuggest"></div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="nameGo" type="button">Finish</button>
+      <a class="backlink" id="nameBack" href="#">← back</a>
+    </section>
+
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+
+  // Chrome only — this page must not send anyone to itself.
+  LT.boot('');
+
+  var next = new URLSearchParams(location.search).get('next') || 'explore.html';
+  function done(){
+    // Never bounce back to the login page itself.
+    location.replace(/^login\.html/.test(next) ? 'explore.html' : next);
+  }
+
+  // Already signed in? Go straight through.
+  if (LT.auth.signedIn()){
+    LT.auth.refresh().then(function(u){ if (u) done(); });
+  }
+
+  /* ---------------------------------------------------------------- steps */
+  function show(which){
+    ['stepStart','stepCreds','stepName'].forEach(function(s){
+      $(s).classList.toggle('on', s === which);
+    });
+  }
+
+  function fieldErr(inputId, msg){
+    var el = $(inputId);
+    // Scope to the input's own .field — several fields share a form, and
+    // querying the form would light up the first error box every time.
+    var field = el.closest('.field');
+    var box = field && field.querySelector('.err-text');
+    el.classList.toggle('bad', !!msg);
+    if (box){ box.textContent = msg || ''; box.classList.toggle('on', !!msg); }
+  }
+  function clearErrs(scope){
+    $(scope).querySelectorAll('.input.bad').forEach(function(i){ i.classList.remove('bad'); });
+    $(scope).querySelectorAll('.err-text.on').forEach(function(b){ b.classList.remove('on'); });
+  }
+
+  /* ------------------------------------------------------------- sign in */
+  $('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    clearErrs('stepStart');
+    var handle = $('lHandle').value.trim().toLowerCase();
+    var pass = $('lPass').value;
+    if (!handle) return fieldErr('lHandle', 'Enter your username.');
+    if (!pass) return fieldErr('lPass', 'Enter your password.');
+
+    var btn = $('loginGo');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    LT.auth.login(handle, pass)
+      .then(done)
+      .catch(function(err){
+        fieldErr(err.field === 'password' ? 'lPass' : 'lHandle', err.message);
+        btn.disabled = false; btn.textContent = 'Sign in';
+      });
+  });
+
+  $('toSignup').onclick = function(){
+    $('ledeTitle').innerHTML = 'Make an <em>account</em>';
+    $('ledeSub').textContent = 'Two short steps. Username first, then what people call you.';
+    show('stepCreds');
+    $('sUser').focus();
+  };
+  $('credsBack').onclick = function(e){
+    e.preventDefault();
+    $('ledeTitle').innerHTML = 'Walk Thailand<br><em>with someone there</em>';
+    $('ledeSub').textContent = 'You need an account to watch a walk or to guide one.';
+    show('stepStart');
+  };
+
+  /* ------------------------------------------- live username availability */
+  function wireUsername(inputId, stateId, suggestId){
+    var input = $(inputId), state = $(stateId), sug = $(suggestId);
+    var timer, lastChecked = '', lastOk = false;
+
+    function paint(cls, text){ state.className = 'ustate ' + cls; state.textContent = text; }
+
+    input.addEventListener('input', function(){
+      var v = input.value.trim().toLowerCase();
+      if (input.value !== v) input.value = v;
+      fieldErr(inputId, '');
+      sug.innerHTML = '';
+      clearTimeout(timer);
+      lastOk = false;
+
+      if (!v){ paint('', ''); return; }
+      if (v.length < 3){ paint('busy', 'too short'); return; }
+
+      paint('busy', 'checking…');
+      timer = setTimeout(function(){
+        LT.auth.usernameAvailable(v).then(function(res){
+          if (input.value.trim().toLowerCase() !== v) return;   // moved on
+          lastChecked = v;
+          lastOk = res.available;
+          if (res.available){ paint('ok', 'available'); }
+          else {
+            paint('no', 'taken');
+            if (res.suggestion){
+              sug.innerHTML = '<button type="button" data-u="' + LT.esc(res.suggestion) + '">' +
+                'use @' + LT.esc(res.suggestion) + '</button>';
+              sug.querySelector('button').onclick = function(){
+                input.value = res.suggestion;
+                input.dispatchEvent(new Event('input'));
+              };
+            }
+          }
+        }).catch(function(){ paint('', ''); });
+      }, 320);
+    });
+
+    return {
+      /** Server is the authority; this is only to avoid an obvious round trip. */
+      looksFree: function(){ return lastOk && lastChecked === input.value.trim().toLowerCase(); },
+      value: function(){ return input.value.trim().toLowerCase(); }
+    };
+  }
+
+  var uCheck = wireUsername('sUser', 'uState', 'uSuggest');
+  var gCheck = wireUsername('gUser', 'gState', 'gSuggest');
+
+  /* --------------------------------------------- manual signup, step 1 -> 2 */
+  var pending = null;   // { username, password }  or  { credential }
+
+  $('credsForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    clearErrs('stepCreds');
+    var u = uCheck.value(), p = $('sPass').value;
+
+    if (!/^[a-z0-9_]{3,20}$/.test(u)){
+      return fieldErr('sUser', '3–20 characters: lowercase letters, numbers, underscore.');
+    }
+    if (p.length < 8) return fieldErr('sPass', 'At least 8 characters.');
+
+    var btn = $('credsGo');
+    btn.disabled = true; btn.textContent = 'Checking…';
+
+    LT.auth.usernameAvailable(u).then(function(res){
+      btn.disabled = false; btn.textContent = 'Next →';
+      if (!res.available){
+        fieldErr('sUser', res.reason || 'Someone already has that username.');
+        return;
+      }
+      pending = { mode:'password', username:u, password:p };
+      $('gUserField').style.display = 'none';
+      $('handleEcho').textContent = '@' + u;
+      $('dNameHint').style.display = '';
+      $('ledeTitle').innerHTML = 'Almost <em>there</em>';
+      $('ledeSub').textContent = 'One more thing and you’re in.';
+      show('stepName');
+      $('dName').focus();
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = 'Next →';
+      fieldErr('sUser', err.message);
+    });
+  });
+
+  $('nameBack').onclick = function(e){
+    e.preventDefault();
+    show(pending && pending.mode === 'google' ? 'stepStart' : 'stepCreds');
+  };
+
+  /* ------------------------------------------------------ finish (both paths) */
+  $('nameGo').onclick = function(){
+    var display = $('dName').value.trim();
+    if (!display){
+      $('dNameErr').textContent = 'Pick something for people to call you.';
+      $('dNameErr').classList.add('on');
+      $('dName').classList.add('bad');
+      return $('dName').focus();
+    }
+    $('dNameErr').classList.remove('on');
+    $('dName').classList.remove('bad');
+
+    var btn = $('nameGo');
+    btn.disabled = true; btn.textContent = 'Setting up…';
+    var restore = function(){ btn.disabled = false; btn.textContent = 'Finish'; };
+
+    if (pending && pending.mode === 'google'){
+      var gu = gCheck.value();
+      if (!/^[a-z0-9_]{3,20}$/.test(gu)){
+        restore();
+        return fieldErr('gUser', '3–20 characters: lowercase letters, numbers, underscore.');
+      }
+      LT.auth.google(pending.credential, { username: gu, display_name: display })
+        .then(function(res){
+          if (res && res.needs_profile){ restore(); return; }   // shouldn't happen
+          done();
+        })
+        .catch(function(err){
+          restore();
+          if (err.field === 'username') fieldErr('gUser', err.message);
+          else { LT.toast(err.message, 'bad'); show('stepStart'); }
+        });
+      return;
+    }
+
+    LT.auth.signup({
+      username: pending.username,
+      password: pending.password,
+      display_name: display
+    }).then(done).catch(function(err){
+      restore();
+      if (err.field === 'username'){
+        fieldErr('sUser', err.message);
+        show('stepCreds');
+      } else {
+        LT.toast(err.message, 'bad');
+      }
+    });
+  };
+
+  /* --------------------------------------------------------------- google */
+  LT.auth.config().then(function(cfg){
+    if (!cfg.google_enabled){
+      $('gButton').style.display = 'none';
+      $('gNote').innerHTML = 'Google sign-in isn’t switched on for this server yet. ' +
+        'Use a username and password below.';
+      return;
+    }
+    waitForGoogle(function(ok){
+      if (!ok){
+        $('gButton').style.display = 'none';
+        $('gNote').textContent = 'Google sign-in could not load. Use a username and password below.';
+        return;
+      }
+      $('gNote').textContent = 'No password needed — you’ll pick a name next.';
+      google.accounts.id.initialize({
+        client_id: cfg.google_client_id,
+        callback: onGoogle,
+        ux_mode: 'popup'
+      });
+      google.accounts.id.renderButton($('gButton'), {
+        theme: 'filled_black', size: 'large', shape: 'pill',
+        text: 'continue_with', width: 320
+      });
+    });
+  }).catch(function(){
+    $('gButton').style.display = 'none';
+    $('gNote').textContent = 'Could not reach the server. Check that the API is running.';
+  });
+
+  function waitForGoogle(cb){
+    var tries = 0;
+    (function poll(){
+      if (window.google && google.accounts && google.accounts.id) return cb(true);
+      if (++tries > 40) return cb(false);
+      setTimeout(poll, 150);
+    })();
+  }
+
+  function onGoogle(response){
+    if (!response || !response.credential){
+      return LT.toast('Google did not return a sign-in.', 'bad');
+    }
+    LT.toast('Checking with Google…');
+    LT.auth.google(response.credential).then(function(res){
+      // Existing account: LT.auth.google resolved with the user.
+      if (res && res.needs_profile) return askProfile(response.credential, res.needs_profile);
+      done();
+    }).catch(function(err){
+      LT.toast(err.message, 'bad');
+    });
+  }
+
+  function askProfile(credential, info){
+    pending = { mode:'google', credential: credential };
+    $('ledeTitle').innerHTML = 'Nearly <em>in</em>';
+    $('ledeSub').textContent = 'Google told us who you are. Now pick how you appear here.';
+    $('dName').value = info.suggested_display_name || '';
+    $('gUserField').style.display = '';
+    $('gUser').value = info.suggested_username || '';
+    $('gUser').dispatchEvent(new Event('input'));
+    $('dNameHint').style.display = 'none';
+    show('stepName');
+    $('dName').focus();
+  }
+})();
+</script>
+</body>
+</html>

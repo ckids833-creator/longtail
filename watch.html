@@ -186,12 +186,26 @@ async function join(){
   $('btnJoin').disabled=true; $('btnJoin').textContent='Connecting…';
 
   try{
-    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+    // Everyone needs an account now. The Worker uses the account's display
+    // name for the identity, so what's typed here is only a fallback for the
+    // older token endpoint.
+    const headers={'Content-Type':'application/json'};
+    let authTok=''; try{ authTok=localStorage.getItem('lt_token')||''; }catch{}
+    if(authTok) headers['Authorization']='Bearer '+authTok;
+
+    const res=await fetch(API,{method:'POST',headers,
       body:JSON.stringify({room:ROOM,name,role:'traveler'})});
     const ctype=res.headers.get('content-type')||'';
     if(!ctype.includes('application/json')) throw new Error('The walk server is not responding properly. Ask your guide to check their setup.');
     const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Could not join');
+    if(!res.ok){
+      if(res.status===401){
+        const back=encodeURIComponent(location.pathname.split('/').pop()+location.search);
+        location.href='login.html?next='+back;
+        return;
+      }
+      throw new Error(data.error||'Could not join');
+    }
 
     room=new LK.Room({adaptiveStream:true,dynacast:true});
     wire();

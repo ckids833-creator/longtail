@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<meta name="robots" content="noindex">
+<title>Studio — Longtail</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{padding-bottom:var(--demo-h,0px);}
+
+  .hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+    border-radius:var(--r-xl);padding:clamp(20px,3vw,28px);margin-bottom:20px;}
+  .hero .t{flex:1;min-width:220px;}
+  .hero h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:clamp(28px,4vw,42px);line-height:.95;}
+  .hero .handle{font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:var(--faint);margin-top:6px;}
+  .hero .where{font-size:13.5px;color:var(--dim);margin-top:8px;}
+  .hero .lvlwrap{min-width:190px;}
+
+  .golive{display:flex;align-items:center;gap:13px;border-radius:var(--r-lg);
+    padding:16px 18px;margin-bottom:20px;background:var(--glass);
+    border:1px solid var(--glass-line);flex-wrap:wrap;}
+  .golive.on{background:rgba(87,211,146,.09);border-color:rgba(87,211,146,.36);}
+  .golive .t{flex:1;min-width:200px;}
+  .golive .t b{display:block;font-size:15px;font-weight:650;}
+  .golive .t span{font-size:12.5px;color:var(--dim);}
+
+  .switch{position:relative;width:52px;height:30px;flex-shrink:0;cursor:pointer;}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;}
+  .switch .track{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.12);
+    transition:background .3s var(--ease);}
+  .switch .knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+    background:var(--paper);transition:transform .3s var(--ease-out);}
+  .switch input:checked ~ .track{background:var(--green);}
+  .switch input:checked ~ .knob{transform:translateX(22px);}
+  .switch input:disabled ~ .track{opacity:.5;}
+
+  .grid3{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:20px;}
+  .tile{border-radius:var(--r-md);padding:16px;background:var(--glass);border:1px solid var(--glass-line);}
+  .tile .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);}
+  .tile .v{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:32px;
+    line-height:1;margin-top:8px;}
+  .tile .v.green{color:var(--green-soft);}
+  .tile .sub{font-size:11.5px;color:var(--faint);margin-top:6px;}
+
+  .cols{display:grid;gap:18px;grid-template-columns:1fr;}
+  @media (min-width:940px){ .cols{grid-template-columns:1.25fr .75fr;} }
+
+  .panel{border-radius:var(--r-xl);padding:clamp(18px,2.6vw,24px);}
+  .panel h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:19px;margin-bottom:14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;}
+
+  .bk{display:flex;align-items:center;gap:12px;padding:13px;border-radius:var(--r-md);
+    background:rgba(255,255,255,.04);border:1px solid var(--line);margin-bottom:9px;}
+  .bk .t{flex:1;min-width:0;}
+  .bk .t b{display:block;font-size:14.5px;font-weight:600;}
+  .bk .t span{font-size:11.5px;color:var(--faint);}
+  .bk .r{text-align:right;flex-shrink:0;}
+  .bk .r .amt{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green-soft);}
+  .bk .acts{display:flex;gap:6px;margin-top:7px;}
+  .bk .acts button{padding:6px 11px;border-radius:8px;font-size:11.5px;font-weight:600;
+    border:1px solid var(--glass-line);background:var(--glass);transition:all .2s;}
+  .bk .acts .yes:hover{border-color:var(--green);color:var(--green-soft);}
+  .bk .acts .no:hover{border-color:rgba(210,71,43,.6);color:#FF9B89;}
+
+  .row2{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .row2:last-child{border-bottom:none;}
+  .row2 .k{color:var(--dim);}
+  .row2 .v{font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+
+  .empty{padding:26px 10px;text-align:center;color:var(--faint);font-size:13px;}
+
+  .note{border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;line-height:1.65;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim);}
+  .note.warm{background:rgba(232,163,61,.09);border-color:rgba(232,163,61,.26);color:var(--saffron);}
+  .stack > * + *{margin-top:10px;}
+
+  .livebar{display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:var(--r-lg);
+    background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);margin-bottom:20px;flex-wrap:wrap;}
+  .livebar .t{flex:1;min-width:180px;}
+  .livebar .t b{display:block;font-size:15px;}
+  .livebar .t span{font-size:12.5px;color:var(--dim);}
+
+  .codebox{display:flex;gap:8px;align-items:center;}
+  .codebox input{flex:1;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <div id="body" style="display:none">
+
+    <section class="hero glass reveal in">
+      <span class="avatar lg" id="av">?</span>
+      <div class="t">
+        <h1 id="dispName">Studio</h1>
+        <div class="handle" id="handle">—</div>
+        <div class="where" id="where">—</div>
+      </div>
+      <div class="lvlwrap">
+        <span class="lvl" id="lvl">level 1</span>
+        <div class="xpbar"><i id="xpFill" style="width:0%"></i></div>
+        <div class="hint" id="xpText" style="margin-top:6px">0 XP</div>
+      </div>
+    </section>
+
+    <div id="liveBarWrap"></div>
+
+    <section class="golive glass" id="goliveBox">
+      <label class="switch">
+        <input type="checkbox" id="liveToggle">
+        <span class="track"></span><span class="knob"></span>
+      </label>
+      <div class="t">
+        <b id="liveTitle">You’re off the map</b>
+        <span id="liveSub">Turn this on to show as walking now. Turn it off and you disappear —
+          you’re never obliged to accept anything.</span>
+      </div>
+      <a class="btn btn-primary" id="openApp" href="index.html">Open the walk app →</a>
+    </section>
+
+    <div class="grid3">
+      <div class="tile"><div class="k">Walks done</div><div class="v" id="tWalks">0</div>
+        <div class="sub">completed sessions</div></div>
+      <div class="tile"><div class="k">Minutes walked</div><div class="v" id="tMins">0</div>
+        <div class="sub">billed on the server clock</div></div>
+      <div class="tile"><div class="k">You keep</div><div class="v green" id="tEarn">฿0</div>
+        <div class="sub">after the 12% fee</div></div>
+      <div class="tile"><div class="k">Experience</div><div class="v" id="tXp">0</div>
+        <div class="sub">XP earned guiding</div></div>
+    </div>
+
+    <div class="cols">
+      <section class="panel glass">
+        <h2>Walk requests <span class="tag" id="bkCount">0</span></h2>
+        <div id="bookings"></div>
+      </section>
+
+      <div>
+        <section class="panel glass" style="margin-bottom:18px">
+          <h2>Your walk code</h2>
+          <div class="codebox">
+            <input class="input" id="roomIn" maxlength="40" autocomplete="off"
+                   autocapitalize="off" spellcheck="false">
+            <button class="btn btn-glass btn-sm" id="roomSave" type="button">Save</button>
+          </div>
+          <div class="err-text" id="roomErr"></div>
+          <p class="hint">Travellers use this to join. Changing it breaks any link you already sent.</p>
+          <div class="stack" style="margin-top:14px">
+            <button class="btn btn-glass btn-block btn-sm" id="copyLink" type="button">Copy the traveller link</button>
+          </div>
+        </section>
+
+        <section class="panel glass">
+          <h2>Recent walks</h2>
+          <div id="recent"></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel glass" style="margin-top:18px">
+      <h2>Not connected yet</h2>
+      <div class="note warm">
+        Payouts aren’t wired. These totals are what you <em>would</em> have earned —
+        no money has moved, and no card has been charged for any of these walks.
+      </div>
+    </section>
+  </div>
+
+  <div id="gate" class="page-head" style="display:none">
+    <h1>Studio is for <em>guides</em></h1>
+    <p class="lede">You haven’t joined as a guide yet. It takes one form, and your
+      username and password stay exactly as they are.</p>
+    <a class="btn btn-primary" href="guides.html" style="margin-top:18px">Go to Join Guides →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+LT.start('studio').then(function(user){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+
+  if (!LT.auth.isGuide()){
+    $('gate').style.display = 'block';
+    return;
+  }
+
+  var data = null;
+
+  function paint(d){
+    data = d;
+    var u = d.user, g = d.guide;
+
+    $('body').style.display = 'block';
+    $('av').textContent = (u.display_name || '?').slice(0,1).toUpperCase();
+    $('av').setAttribute('style', LT.avatarStyle(u.avatar_hue));
+    $('dispName').textContent = u.display_name;
+    $('handle').textContent = '@' + u.username;
+    $('where').textContent = g.area + ' · ' + g.city;
+
+    var lvl = LT.level(g.xp || 0);
+    var floorXp = Math.pow(lvl - 1, 2) * 100;
+    var ceilXp = Math.pow(lvl, 2) * 100;
+    var pct = Math.max(3, Math.min(100,
+      Math.round(((g.xp || 0) - floorXp) / (ceilXp - floorXp) * 100)));
+    $('lvl').textContent = 'level ' + lvl;
+    $('xpFill').style.width = pct + '%';
+    $('xpText').textContent = (g.xp || 0) + ' XP · ' + (ceilXp - (g.xp || 0)) + ' to level ' + (lvl + 1);
+
+    $('tWalks').textContent = d.totals.walks;
+    $('tMins').textContent = d.totals.minutes;
+    $('tEarn').textContent = LT.baht(Math.round(d.totals.earned_satang / 100));
+    $('tXp').textContent = g.xp || 0;
+
+    $('roomIn').value = g.room || '';
+    $('openApp').href = g.room ? 'index.html?room=' + encodeURIComponent(g.room) : 'index.html';
+
+    setLive(g.live);
+    paintLiveSession(d.live_session);
+    paintBookings(d.bookings);
+    paintRecent(d.recent_sessions);
+  }
+
+  /* ------------------------------------------------------------ live toggle */
+  function setLive(on){
+    $('liveToggle').checked = !!on;
+    $('goliveBox').classList.toggle('on', !!on);
+    $('liveTitle').textContent = on ? 'You’re showing as walking now' : 'You’re off the map';
+    $('liveSub').textContent = on
+      ? 'Travellers can see you on the globe. Switch off any time — you never owe anyone a reason.'
+      : 'Turn this on to show as walking now. Turn it off and you disappear — you’re never obliged to accept anything.';
+  }
+
+  $('liveToggle').onchange = function(){
+    var on = $('liveToggle').checked;
+    $('liveToggle').disabled = true;
+    LT.api('PATCH', '/api/guides/me', { live: on })
+      .then(function(res){
+        setLive(res.guide.live);
+        LT.toast(res.guide.live ? 'You’re on the map.' : 'You’re off the map.',
+                 res.guide.live ? 'good' : '');
+      })
+      .catch(function(err){ setLive(!on); LT.toast(err.message, 'bad'); })
+      .then(function(){ $('liveToggle').disabled = false; });
+  };
+
+  /* ------------------------------------------------------------ walk code */
+  $('roomIn').addEventListener('input', function(){
+    $('roomIn').classList.remove('bad');
+    $('roomErr').classList.remove('on');
+  });
+
+  $('roomSave').onclick = function(){
+    var code = $('roomIn').value.trim();
+    if (!LT.validCode(code)){
+      $('roomIn').classList.add('bad');
+      $('roomErr').textContent = '3–40 characters: letters, numbers, dashes, underscores.';
+      $('roomErr').classList.add('on');
+      return;
+    }
+    $('roomSave').disabled = true;
+    LT.api('PATCH', '/api/guides/me', { room: code })
+      .then(function(res){
+        data.guide.room = res.guide.room;
+        $('openApp').href = 'index.html?room=' + encodeURIComponent(res.guide.room);
+        LT.toast('Walk code saved.', 'good');
+      })
+      .catch(function(err){
+        $('roomIn').classList.add('bad');
+        $('roomErr').textContent = err.message;
+        $('roomErr').classList.add('on');
+      })
+      .then(function(){ $('roomSave').disabled = false; });
+  };
+
+  $('copyLink').onclick = function(){
+    var base = location.origin + location.pathname.replace(/[^/]*$/, '');
+    var url = base + LT.watchUrl($('roomIn').value.trim());
+    navigator.clipboard.writeText(url).then(function(){
+      LT.toast('Traveller link copied.', 'good');
+    }).catch(function(){
+      LT.toast('Copy failed — the link is ' + url, 'bad');
+    });
+  };
+
+  /* --------------------------------------------------------- live session */
+  function paintLiveSession(s){
+    if (!s){ $('liveBarWrap').innerHTML = ''; return; }
+    $('liveBarWrap').innerHTML =
+      '<div class="livebar">' +
+        '<span class="live"><i></i>walking</span>' +
+        '<span class="t"><b>A walk is running right now</b>' +
+          '<span>Started ' + LT.esc(s.started_at) + ' (server time)</span></span>' +
+        '<button class="btn btn-glass btn-sm" id="endNow" type="button">End this walk</button>' +
+      '</div>';
+    $('endNow').onclick = function(){
+      $('endNow').disabled = true;
+      LT.api('POST', '/api/sessions/' + s.id + '/end', { ended_by: 'guide' })
+        .then(function(res){
+          LT.toast('Walk ended. +' + res.xp_gained + ' XP.', 'good');
+          return reload();
+        })
+        .catch(function(err){ LT.toast(err.message, 'bad'); $('endNow').disabled = false; });
+    };
+  }
+
+  /* --------------------------------------------------------------- bookings */
+  var STATUS_LABEL = {
+    requested: 'waiting on you', accepted: 'accepted', declined: 'declined',
+    live: 'walking now', done: 'finished', cancelled: 'cancelled'
+  };
+
+  function paintBookings(list){
+    var open = list.filter(function(b){ return b.status === 'requested' || b.status === 'accepted'; });
+    $('bkCount').textContent = open.length;
+
+    if (!list.length){
+      $('bookings').innerHTML = '<div class="empty">No requests yet. ' +
+        'They show up here the moment someone asks for a walk.</div>';
+      return;
+    }
+
+    $('bookings').innerHTML = list.slice(0, 20).map(function(b){
+      var acts = b.status === 'requested'
+        ? '<div class="acts">' +
+            '<button class="yes" data-acc="' + b.id + '" type="button">Accept</button>' +
+            '<button class="no" data-dec="' + b.id + '" type="button">Decline</button>' +
+          '</div>'
+        : b.status === 'accepted'
+          ? '<div class="acts"><button class="yes" data-start="' + b.id + '" type="button">Start this walk</button></div>'
+          : '';
+      return '<div class="bk">' +
+        '<span class="t"><b>' + LT.esc(b.traveler_name) + '</b>' +
+          '<span>' + b.minutes + ' min · ' + (STATUS_LABEL[b.status] || b.status) + '</span>' +
+          acts +
+        '</span>' +
+        '<span class="r"><span class="amt">' + LT.baht(b.hold_satang / 100) + '</span></span>' +
+      '</div>';
+    }).join('');
+
+    $('bookings').querySelectorAll('[data-acc]').forEach(function(btn){
+      btn.onclick = function(){ setStatus(btn.dataset.acc, 'accepted'); };
+    });
+    $('bookings').querySelectorAll('[data-dec]').forEach(function(btn){
+      btn.onclick = function(){ setStatus(btn.dataset.dec, 'declined'); };
+    });
+    $('bookings').querySelectorAll('[data-start]').forEach(function(btn){
+      btn.onclick = function(){
+        btn.disabled = true;
+        LT.api('POST', '/api/sessions', { booking_id: btn.dataset.start })
+          .then(function(){ LT.toast('Walk started.', 'good'); return reload(); })
+          .catch(function(err){ LT.toast(err.message, 'bad'); btn.disabled = false; });
+      };
+    });
+  }
+
+  function setStatus(bookingId, status){
+    LT.api('PATCH', '/api/bookings/' + bookingId, { status: status })
+      .then(function(){
+        LT.toast(status === 'accepted' ? 'Accepted.' : 'Declined — no explanation owed.',
+                 status === 'accepted' ? 'good' : '');
+        return reload();
+      })
+      .catch(function(err){ LT.toast(err.message, 'bad'); });
+  }
+
+  /* ---------------------------------------------------------------- recent */
+  function paintRecent(list){
+    var done = list.filter(function(s){ return s.status === 'ended'; });
+    if (!done.length){
+      $('recent').innerHTML = '<div class="empty">Nothing finished yet.</div>';
+      return;
+    }
+    $('recent').innerHTML = done.slice(0, 8).map(function(s){
+      return '<div class="row2">' +
+        '<span class="k">' + LT.esc((s.ended_at || '').slice(0, 16)) + '</span>' +
+        '<span class="v">' + Math.round(s.billed_seconds / 60) + ' min · ' +
+          LT.baht(Math.round(s.billed_satang / 100)) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ------------------------------------------------------------------ load */
+  function reload(){
+    return LT.api('GET', '/api/studio').then(paint).catch(function(err){
+      LT.toast(err.message, 'bad');
+    });
+  }
+
+  reload();
+}).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
+</script>
+</body>
+</html>

@@ -305,10 +305,8 @@
 <script src="config.js"></script>
 <script src="data.js"></script>
 <script>
-(function(){
+LT.start('explore').then(function(account){
   'use strict';
-  LT.boot('explore');
-
   var $ = function(id){ return document.getElementById(id); };
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -609,11 +607,9 @@
         'We hold the amount and refund whatever you don’t use. If the hold runs out the walk ends — ' +
         'you are never charged more than this without asking.</p>' +
 
-      '<div class="field">' +
-        '<label class="label" for="travName">Your first name</label>' +
-        '<input class="input" id="travName" maxlength="60" autocomplete="given-name" ' +
-          'placeholder="So ' + LT.esc(g.name) + ' knows who to expect">' +
-        '<div class="err-text" id="travErr"></div>' +
+      '<div class="note plain" style="margin-bottom:14px">' +
+        LT.esc(g.name) + ' will see this as coming from <b>' +
+        LT.esc(LT.auth.user().display_name) + '</b> (@' + LT.esc(LT.auth.user().username) + ').' +
       '</div>' +
 
       (demo
@@ -633,56 +629,30 @@
     '</div>';
 
     $('durs').querySelectorAll('[data-m]').forEach(function(b){
-      b.onclick = function(){
-        var typed = $('travName') ? $('travName').value : '';
-        minutes = +b.dataset.m;
-        renderDetail();
-        if ($('travName')) $('travName').value = typed;  // survive the re-render
-      };
+      b.onclick = function(){ minutes = +b.dataset.m; renderDetail(); };
     });
-    $('travName').addEventListener('input', function(){
-      $('travName').classList.remove('bad');
-      $('travErr').classList.remove('on');
-    });
-    $('travName').addEventListener('keydown', function(e){ if (e.key === 'Enter') reserve(); });
     $('reserve').onclick = reserve;
     if ($('joinNow')) $('joinNow').onclick = function(){ location.href = LT.watchUrl(g.room); };
   }
 
   function reserve(){
     var g = current, mins = minutes;
-    var travelerName = $('travName').value.trim();
-
-    if (!travelerName){
-      $('travName').classList.add('bad');
-      $('travErr').textContent = 'Give ' + g.name + ' a name to look out for.';
-      $('travErr').classList.add('on');
-      $('travName').focus();
-      return;
-    }
-
     var btn = $('reserve');
     btn.disabled = true;
     btn.textContent = 'Sending…';
 
     // No card is collected anywhere in this flow. The booking row records what
-    // was asked for and holds nothing.
-    LT.api('POST', '/api/bookings', {
-      guide_id: g.id, name: travelerName.slice(0, 60), minutes: mins
-    }).then(function(res){
-      showRequested(g, mins, res.booking.id);
-    }).catch(function(err){
-      // Backend down: keep the request rather than losing it.
-      try {
-        var all = JSON.parse(localStorage.getItem('lt_requests') || '[]');
-        all.push({ at: new Date().toISOString(), guide: g.id, guideName: g.name,
-                   name: travelerName, minutes: mins, baht: mins * g.rate, room: g.room,
-                   unsent: true });
-        localStorage.setItem('lt_requests', JSON.stringify(all));
-      } catch (e) { /* private mode */ }
-      LT.toast('Could not reach the server — request saved on this device.', 'bad');
-      showRequested(g, mins, null);
-    });
+    // was asked for and holds nothing. The traveller's name comes from the
+    // signed-in account, not from anything typed here.
+    LT.api('POST', '/api/bookings', { guide_id: g.id, minutes: mins })
+      .then(function(res){
+        showRequested(g, mins, res.booking.id);
+      })
+      .catch(function(err){
+        btn.disabled = false;
+        btn.textContent = 'Reserve ' + mins + ' minutes';
+        LT.toast(err.message, 'bad');
+      });
   }
 
   function showRequested(g, mins, bookingId){
@@ -698,9 +668,7 @@
         'you’ll get a message with a start time and a walk code.</p>' +
       '<div class="note">No card was taken and nothing has been charged. ' +
         'Payments are not connected yet.</div>' +
-      (bookingId
-        ? '<p class="hint">Reference <span class="mono">' + LT.esc(bookingId) + '</span></p>'
-        : '<p class="hint">Saved on this device only — it did not reach the server.</p>') +
+      '<p class="hint">Reference <span class="mono">' + LT.esc(bookingId || '—') + '</span></p>' +
       (g.room ? '<div class="field" style="margin-top:18px">' +
         '<div class="label">Walk code for this route</div>' +
         '<input class="input codebig" value="' + LT.esc(g.room) + '" readonly>' +
@@ -830,7 +798,7 @@
      7. Chrome
      ========================================================= */
   $('liveCount').textContent = LT.liveGuides().length;
-})();
+}).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
 </script>
 </body>
 </html>

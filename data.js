@@ -343,6 +343,10 @@ var LT = (function () {
           var err = new Error(data.error || ('Request failed (' + res.status + ')'));
           err.status = res.status;
           err.field = data.field;
+          err.body = data;
+          // 409 from /auth/google is not a failure: it means "tell me who you
+          // want to be first". Carry the payload so callers can act on it.
+          err.needs_profile = data.needs_profile ? data : null;
           // A dead session should not leave a stale token lying around.
           if (res.status === 401 && t) setToken('');
           throw err;
@@ -395,25 +399,98 @@ var LT = (function () {
       });
   }
 
-  /* ---- guide auth ---- */
+  /* ============================================================
+     Accounts
+
+     session.user  is set once /api/auth/me answers, and stays set for the
+     life of the page. session.guide is the guiding half, null until the
+     person has joined as a guide.
+     ============================================================ */
+
+  var session = { user: null, guide: null, checked: false };
+
   var auth = {
     token: token,
     signedIn: function(){ return !!token(); },
+    user: function(){ return session.user; },
+    guide: function(){ return session.guide; },
+    isGuide: function(){ return !!(session.user && session.user.is_guide); },
+
+    /** Ask the server who we are. Resolves to null when signed out. */
+    refresh: function(){
+      if (!token()){
+        session.user = null; session.guide = null; session.checked = true;
+        return Promise.resolve(null);
+      }
+      return api('GET', '/api/auth/me')
+        .then(function (d) {
+          session.user = d.user; session.guide = d.guide || null; session.checked = true;
+          return d.user;
+        })
+        .catch(function () {
+          // expired or revoked: api() has already cleared the token
+          session.user = null; session.guide = null; session.checked = true;
+          return null;
+        });
+    },
+
+    config: function(){ return api('GET', '/api/auth/config'); },
+
+    usernameAvailable: function(name){
+      return api('GET', '/api/auth/username?username=' + encodeURIComponent(name));
+    },
+
     signup: function(payload){
-      return api('POST', '/api/auth/signup', payload).then(function (d) {
-        setToken(d.token); return d.guide;
+      return api('POST', '/api/auth/signup', payload).then(adopt);
+    },
+
+    login: function(handle, password){
+      return api('POST', '/api/auth/login', { username: handle, password: password }).then(adopt);
+    },
+
+    /**
+     * One call for both halves of the Google dance. Without a username it may
+     * come back needing a profile, which the page turns into a form; with one
+     * it creates the account. Either way the Google credential is re-sent and
+     * re-verified.
+     */
+    google: function(credential, profile){
+      var body = { credential: credential };
+      if (profile){ body.username = profile.username; body.display_name = profile.display_name; }
+      return api('POST', '/api/auth/google', body).then(adopt)
+        .catch(function (err) {
+          if (err.status === 409 && err.needs_profile) return err.needs_profile;
+          throw err;
+        });
+    },
+
+    joinAsGuide: function(payload){
+      return api('POST', '/api/guides/join', payload).then(function (d) {
+        session.user = d.user;
+        return d;
       });
     },
-    login: function(email, password){
-      return api('POST', '/api/auth/login', { email: email, password: password })
-        .then(function (d) { setToken(d.token); return d.guide; });
+
+    updateProfile: function(patch){
+      return api('PATCH', '/api/auth/me', patch).then(function (d) {
+        session.user = d.user; return d.user;
+      });
     },
-    me: function(){ return api('GET', '/api/auth/me').then(function (d) { return d.guide; }); },
+
     logout: function(){
       return api('POST', '/api/auth/logout').catch(function(){ /* already dead */ })
-        .then(function(){ setToken(''); });
+        .then(function(){
+          setToken('');
+          session.user = null; session.guide = null;
+        });
     }
   };
+
+  function adopt(d){
+    if (d && d.token) setToken(d.token);
+    if (d && d.user) session.user = d.user;
+    return d && d.user ? d.user : null;
+  }
 
   /* ------------------------------------------------------------
      helpers
@@ -490,14 +567,20 @@ var LT = (function () {
     toastTimer = setTimeout(function(){ el.className = 'toast'; }, 4200);
   }
 
-  /* nav — rendered from one place so the three pages cannot drift */
-  function nav(current){
+  /**
+   * Nav — rendered from one place so the pages cannot drift.
+   *
+   * Studio only exists for people who have joined as a guide, sits last, and
+   * is the one green item in the bar. Everything else is glass.
+   */
+  function navHtml(current){
     var links = [
       { href:'explore.html',  key:'explore',  label:'Explore' },
       { href:'interest.html', key:'interest', label:'Interest' },
-      { href:'guides.html',   key:'guides',   label:'Join guides' }
+      { href:'guides.html',   key:'guides',   label:'Guide' }
     ];
-    return '<nav class="nav">' +
+
+    var out = '<nav class="nav">' +
       '<a class="brand" href="explore.html" aria-label="Longtail home">' +
         '<span class="mark">L</span><b>Longtail</b>' +
       '</a>' +
@@ -505,8 +588,69 @@ var LT = (function () {
         links.map(function(l){
           return '<a class="navlink' + (l.key===current?' on':'') + '" href="' + l.href + '"' +
                  (l.key===current?' aria-current="page"':'') + '>' + l.label + '</a>';
-        }).join('') +
-      '</div></nav>';
+        }).join('');
+
+    if (auth.isGuide()){
+      out += '<a class="navlink studio' + (current==='studio'?' on':'') + '" href="studio.html"' +
+             (current==='studio'?' aria-current="page"':'') + '>Studio</a>';
+    }
+
+    out += '</div>' + accountHtml() + '</nav>';
+    return out;
+  }
+
+  function accountHtml(){
+    var u = session.user;
+    if (!u){
+      return '<div class="navacct"><a class="btn btn-glass btn-sm" href="login.html">Sign in</a></div>';
+    }
+    return '<div class="navacct">' +
+      '<button class="acctchip" id="acctChip" type="button" aria-haspopup="true" aria-expanded="false">' +
+        '<span class="avatar sm" style="' + avatarStyle(u.avatar_hue) + '">' +
+          esc((u.display_name || '?').slice(0,1).toUpperCase()) + '</span>' +
+        '<span class="who"><b>' + esc(u.display_name) + '</b>' +
+          '<span>@' + esc(u.username) + '</span></span>' +
+      '</button>' +
+      '<div class="acctmenu" id="acctMenu">' +
+        '<div class="acctmenu-head">' +
+          '<b>' + esc(u.display_name) + '</b>' +
+          '<span>@' + esc(u.username) + (u.is_guide ? ' · guide' : '') + '</span>' +
+          '<span class="xp">' + (u.xp || 0) + ' XP</span>' +
+        '</div>' +
+        (u.is_guide ? '<a class="acctmenu-item" href="studio.html">Studio</a>' : '') +
+        '<a class="acctmenu-item" href="guides.html">Guides</a>' +
+        '<button class="acctmenu-item danger" id="signOutBtn" type="button">Sign out</button>' +
+      '</div></div>';
+  }
+
+  /** Re-render the nav in place, e.g. right after signing in or joining. */
+  function renderNav(current){
+    var existing = document.querySelector('.nav');
+    if (existing) existing.outerHTML = navHtml(current);
+    else document.body.insertAdjacentHTML('afterbegin', navHtml(current));
+    wireNav();
+  }
+
+  function wireNav(){
+    var chip = document.getElementById('acctChip');
+    var menu = document.getElementById('acctMenu');
+    if (chip && menu){
+      chip.onclick = function(e){
+        e.stopPropagation();
+        var open = menu.classList.toggle('on');
+        chip.setAttribute('aria-expanded', String(open));
+      };
+      document.addEventListener('click', function(){
+        menu.classList.remove('on');
+        chip.setAttribute('aria-expanded', 'false');
+      });
+    }
+    var out = document.getElementById('signOutBtn');
+    if (out){
+      out.onclick = function(){
+        auth.logout().then(function(){ location.href = 'login.html'; });
+      };
+    }
   }
 
   function demoBar(){
@@ -560,11 +704,50 @@ var LT = (function () {
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fn(); });
   }
 
-  function boot(current){
-    if (DEMO_MODE) document.body.classList.add('has-demo');
-    document.body.insertAdjacentHTML('afterbegin', '<div class="aurora"></div>' + nav(current));
+  /** Where to send someone after they sign in. */
+  function here(){
+    return location.pathname.split('/').pop() + location.search;
+  }
+  function toLogin(){
+    location.replace('login.html?next=' + encodeURIComponent(here()));
+  }
+
+  /**
+   * Page entry point.
+   *
+   * Renders the chrome, works out who is signed in, and — unless the page
+   * opts out with { auth:false } — sends anyone signed out to login.html,
+   * remembering where they were headed.
+   *
+   * Resolves with the signed-in user (or null on a public page).
+   */
+  function start(current, opts){
+    opts = opts || {};
+    document.body.insertAdjacentHTML('afterbegin', '<div class="aurora"></div>');
     document.body.insertAdjacentHTML('beforeend',
-      '<div class="toast" id="toast" role="status" aria-live="polite"></div>' + demoBar());
+      '<div class="toast" id="toast" role="status" aria-live="polite"></div>');
+
+    return auth.refresh().then(function (user) {
+      if (opts.auth !== false && !user){
+        toLogin();
+        // Give the redirect a tick; callers should not keep rendering.
+        return Promise.reject({ redirecting: true });
+      }
+      renderNav(current);
+      refreshDemoBar();
+      watchReveals();
+      trackGlass();
+      return user;
+    });
+  }
+
+  /** Chrome only, no account check — used by login.html itself. */
+  function boot(current){
+    document.body.insertAdjacentHTML('afterbegin', '<div class="aurora"></div>');
+    document.body.insertAdjacentHTML('beforeend',
+      '<div class="toast" id="toast" role="status" aria-live="polite"></div>');
+    renderNav(current);
+    refreshDemoBar();
     watchReveals();
     trackGlass();
   }
@@ -584,8 +767,16 @@ var LT = (function () {
     guide: guide, place: place, liveGuides: liveGuides, guidesNear: guidesNear,
     distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl,
     search: search, avatarStyle: avatarStyle, esc: esc,
-    toast: toast, boot: boot, watchReveals: watchReveals, escClose: escClose,
+    toast: toast, boot: boot, start: start, watchReveals: watchReveals, escClose: escClose,
     api: api, load: load, auth: auth, refreshDemoBar: refreshDemoBar,
-    apiBase: apiBase
+    apiBase: apiBase, renderNav: renderNav, toLogin: toLogin,
+    level: function(xp){ return Math.max(1, Math.floor(Math.sqrt((Number(xp)||0)/100)) + 1); },
+    stars: function(rating){
+      if (!rating) return '<span class="stars none">no ratings yet</span>';
+      var full = Math.round(rating);
+      var s = '';
+      for (var i = 1; i <= 5; i++) s += '<i class="' + (i <= full ? 'on' : '') + '">★</i>';
+      return '<span class="stars">' + s + '<b>' + rating.toFixed(1) + '</b></span>';
+    }
   };
 })();
