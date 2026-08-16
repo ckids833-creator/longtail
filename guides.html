@@ -95,6 +95,21 @@
     font-size:26px;margin-bottom:10px;}
   .done p{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:20px;}
   .stack > * + *{margin-top:10px;}
+
+  .linkish{color:var(--green-soft);text-decoration:underline;font-size:inherit;padding:0;}
+  .linkish:hover{color:var(--green);}
+
+  .acct-head{display:flex;gap:14px;align-items:center;margin-bottom:20px;}
+  .acct-head h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:24px;line-height:1;}
+  .acct-head p{font-size:12.5px;color:var(--faint);margin-top:5px;}
+
+  .bk{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:var(--r-sm);
+    background:rgba(255,255,255,.04);border:1px solid var(--line);margin-bottom:8px;}
+  .bk .t{flex:1;min-width:0;}
+  .bk .t b{display:block;font-size:14px;font-weight:600;}
+  .bk .t span{font-size:11.5px;color:var(--faint);}
+  .bk .r{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--green-soft);}
 </style>
 </head>
 <body>
@@ -216,10 +231,7 @@
             <div class="tick">✓</div>
             <h3>Application saved</h3>
             <p id="doneMsg"></p>
-            <div class="note plain">
-              This prototype has no server behind the form yet — your answers are stored in this
-              browser only. Download them and send them over so nothing is lost.
-            </div>
+            <div class="note plain" id="doneNote"></div>
             <div class="stack" style="margin-top:18px">
               <button class="btn btn-primary btn-block" id="dlBtn" type="button">Download my answers (JSON)</button>
               <button class="btn btn-ghost btn-block" id="againBtn" type="button">Edit and send again</button>
@@ -228,33 +240,117 @@
         </div>
       </div>
 
-      <!-- ---------- sign in ---------- -->
+      <!-- ---------- sign in / create account / signed in ---------- -->
       <div class="pane" id="pIn" role="tabpanel">
-        <form id="inForm" novalidate>
-          <div class="field">
-            <label class="label" for="iEmail">Email</label>
-            <input class="input" id="iEmail" type="email" autocomplete="username" placeholder="you@example.com">
-          </div>
-          <div class="field">
-            <label class="label" for="iPass">Password</label>
-            <input class="input" id="iPass" type="password" autocomplete="current-password" placeholder="••••••••">
-          </div>
-          <button class="btn btn-glass btn-block" type="submit">Sign in</button>
-        </form>
 
-        <div class="note" style="margin-top:16px">
-          Guide accounts aren’t built yet. Nothing you type above is stored or sent anywhere.
-          During the pilot, guides go straight into the walk app with a code.
+        <!-- signed out: sign in -->
+        <div id="signInBox">
+          <form id="inForm" novalidate>
+            <div class="field">
+              <label class="label" for="iEmail">Email</label>
+              <input class="input" id="iEmail" type="email" autocomplete="username" placeholder="you@example.com">
+              <div class="err-text"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="iPass">Password</label>
+              <input class="input" id="iPass" type="password" autocomplete="current-password" placeholder="••••••••">
+              <div class="err-text"></div>
+            </div>
+            <button class="btn btn-primary btn-block" id="inGo" type="submit">Sign in</button>
+          </form>
+          <p class="hint" style="text-align:center">
+            No account? <button class="linkish" id="toCreate" type="button">Create one</button>
+          </p>
+        </div>
+
+        <!-- signed out: create account -->
+        <div id="createBox" style="display:none">
+          <form id="upForm" novalidate>
+            <div class="row">
+              <div class="field">
+                <label class="label" for="uName">Your name</label>
+                <input class="input" id="uName" autocomplete="name" placeholder="Nont">
+                <div class="err-text"></div>
+              </div>
+              <div class="field">
+                <label class="label" for="uRoom">Walk code</label>
+                <input class="input" id="uRoom" autocomplete="off" autocapitalize="off"
+                       spellcheck="false" placeholder="yaowarat" maxlength="40">
+                <div class="err-text"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="uEmail">Email</label>
+              <input class="input" id="uEmail" type="email" autocomplete="username" placeholder="you@example.com">
+              <div class="err-text"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="uPass">Password</label>
+              <input class="input" id="uPass" type="password" autocomplete="new-password" placeholder="At least 10 characters">
+              <div class="err-text"></div>
+              <p class="hint">Ten characters minimum. Stored hashed with PBKDF2, never in the clear.</p>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="label" for="uCity">City</label>
+                <input class="input" id="uCity" placeholder="Bangkok">
+                <div class="err-text"></div>
+              </div>
+              <div class="field">
+                <label class="label" for="uArea">Area you walk</label>
+                <input class="input" id="uArea" placeholder="Yaowarat, Chinatown">
+                <div class="err-text"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="uTopic">Your walk, in one line</label>
+              <input class="input" id="uTopic" placeholder="Yaowarat at dusk — the whole street waking up">
+              <div class="err-text"></div>
+            </div>
+            <button class="btn btn-primary btn-block" id="upGo" type="submit">Create my guide account</button>
+          </form>
+          <p class="hint" style="text-align:center">
+            Already have one? <button class="linkish" id="toSignIn" type="button">Sign in</button>
+          </p>
+        </div>
+
+        <!-- signed in -->
+        <div id="acctBox" style="display:none">
+          <div class="acct-head">
+            <span class="avatar lg" id="acctAv">G</span>
+            <span class="t">
+              <h3 id="acctName">—</h3>
+              <p id="acctWhere">—</p>
+            </span>
+          </div>
+
+          <div class="out" style="margin-bottom:16px">
+            <div><div class="k">Walk code</div><div class="v mono" id="acctRoom" style="font-size:19px">—</div></div>
+            <div><div class="k">Walks done</div><div class="v" id="acctDone">0</div></div>
+          </div>
+
+          <label class="check" style="margin-bottom:14px">
+            <input type="checkbox" id="acctLive">
+            <span><b>Show me as walking now.</b> Puts you on the map as live. Turn it off and you
+            disappear from the directory — you are never obliged to accept anything.</span>
+          </label>
+
+          <div id="acctBookings" style="margin-bottom:16px"></div>
+
+          <div class="stack">
+            <button class="btn btn-primary btn-block" id="acctOpen" type="button">Open the guide app →</button>
+            <button class="btn btn-ghost btn-block" id="acctOut" type="button">Sign out</button>
+          </div>
         </div>
 
         <div style="margin-top:26px;padding-top:22px;border-top:1px solid var(--line)">
-          <div class="label">Already guiding — open the walk app</div>
+          <div class="label">Or just open the walk app with a code</div>
           <div class="field">
             <input class="input" id="hostCode" autocomplete="off" autocapitalize="off" spellcheck="false"
                    placeholder="Walk code, e.g. yaowarat" maxlength="40">
             <div class="err-text" id="hostErr"></div>
           </div>
-          <button class="btn btn-primary btn-block" id="hostGo" type="button">Open the guide app →</button>
+          <button class="btn btn-glass btn-block" id="hostGo" type="button">Open the guide app →</button>
           <p class="hint">
             Takes you to the camera view. Leave the code empty to open the app and set one there.
           </p>
@@ -314,12 +410,13 @@
   </div>
 </main>
 
+<script src="config.js"></script>
 <script src="data.js"></script>
 <script>
 (function(){
   'use strict';
   LT.boot('guides');
-  document.documentElement.style.setProperty('--demo-h', LT.DEMO_MODE ? '38px' : '0px');
+  LT.load().then(LT.refreshDemoBar);
 
   var $ = function(id){ return document.getElementById(id); };
 
@@ -394,18 +491,50 @@
       acknowledgedTerms: true
     };
 
-    try {
-      var all = JSON.parse(localStorage.getItem('lt_guide_applications') || '[]');
-      all.push(data);
-      localStorage.setItem('lt_guide_applications', JSON.stringify(all));
-    } catch (err) { /* private browsing — the download below still works */ }
+    $('applyGo').disabled = true;
+    $('applyGo').textContent = 'Sending…';
 
+    LT.api('POST', '/api/applications', data)
+      .then(function(res){ finish(data, res.id); })
+      .catch(function(err){
+        // Never lose someone's application because the server was down.
+        try {
+          var all = JSON.parse(localStorage.getItem('lt_guide_applications') || '[]');
+          all.push(data);
+          localStorage.setItem('lt_guide_applications', JSON.stringify(all));
+        } catch (e) { /* private browsing — the download still works */ }
+
+        if (err.field && $(fieldFor(err.field))){
+          fieldErr(fieldFor(err.field), err.message);
+          $('applyGo').disabled = false;
+          $('applyGo').textContent = 'Send my application';
+          LT.toast(err.message, 'bad');
+          return;
+        }
+        finish(data, null, err.message);
+      });
+  });
+
+  /* map a server field name back onto the input that produced it */
+  function fieldFor(name){
+    return ({ name:'fName', contact:'fContact', email:'fEmail', city:'fCity',
+              area:'fArea', topic:'fTopic', langs:'fLangs' })[name] || '';
+  }
+
+  function finish(data, serverId, failure){
     $('doneMsg').textContent = 'Thanks, ' + data.name + '. We’ve got ' + data.area +
       ' in ' + data.city + ' down as your patch.';
+    $('doneNote').innerHTML = serverId
+      ? 'Saved on the server. Your reference is <span class="mono">' + LT.esc(serverId) + '</span>.'
+      : 'The server could not be reached' + (failure ? ' (' + LT.esc(failure) + ')' : '') +
+        ', so your answers are stored in this browser only. Download them and send them over ' +
+        'so nothing is lost.';
+    $('doneNote').className = serverId ? 'note plain' : 'note';
+
     form.style.display = 'none';
     $('applyDone').style.display = 'block';
     $('applyDone').scrollIntoView({ behavior:'smooth', block:'center' });
-    LT.toast('Application saved in this browser.', 'good');
+    LT.toast(serverId ? 'Application sent.' : 'Saved on this device only.', serverId ? 'good' : 'bad');
 
     $('dlBtn').onclick = function(){
       var blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
@@ -420,15 +549,146 @@
     $('againBtn').onclick = function(){
       $('applyDone').style.display = 'none';
       form.style.display = 'block';
+      $('applyGo').disabled = false;
+      $('applyGo').textContent = 'Send my application';
       form.scrollIntoView({ behavior:'smooth', block:'start' });
     };
-  });
+  }
 
-  /* ---------- sign in (not wired) ---------- */
+  /* ---------- sign in / create account ---------- */
+
+  function showAuth(which){
+    $('signInBox').style.display = which === 'in' ? 'block' : 'none';
+    $('createBox').style.display = which === 'create' ? 'block' : 'none';
+    $('acctBox').style.display  = which === 'acct' ? 'block' : 'none';
+  }
+  $('toCreate').onclick  = function(){ showAuth('create'); };
+  $('toSignIn').onclick  = function(){ showAuth('in'); };
+
+  /* mark the input a server error points at */
+  function markServerErr(err, map){
+    var el = map[err.field] && $(map[err.field]);
+    if (el){
+      el.classList.add('bad');
+      var box = el.parentElement.querySelector('.err-text');
+      if (box){ box.textContent = err.message; box.classList.add('on'); }
+      el.focus();
+      return true;
+    }
+    return false;
+  }
+  function clearErrs(root){
+    root.querySelectorAll('.input.bad').forEach(function(i){ i.classList.remove('bad'); });
+    root.querySelectorAll('.err-text.on').forEach(function(b){ b.classList.remove('on'); });
+  }
+
   $('inForm').addEventListener('submit', function(e){
     e.preventDefault();
-    LT.toast('Guide accounts aren’t live yet — nothing was sent.', 'bad');
+    clearErrs($('signInBox'));
+    var btn = $('inGo');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+
+    LT.auth.login($('iEmail').value.trim(), $('iPass').value)
+      .then(function(guide){
+        $('iPass').value = '';
+        LT.toast('Signed in as ' + guide.name + '.', 'good');
+        renderAccount(guide);
+      })
+      .catch(function(err){
+        if (!markServerErr(err, { email:'iEmail', password:'iPass' })) LT.toast(err.message, 'bad');
+      })
+      .then(function(){ btn.disabled = false; btn.textContent = 'Sign in'; });
   });
+
+  $('upForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    clearErrs($('createBox'));
+    var btn = $('upGo');
+    btn.disabled = true; btn.textContent = 'Creating…';
+
+    LT.auth.signup({
+      name:  $('uName').value.trim(),
+      email: $('uEmail').value.trim(),
+      password: $('uPass').value,
+      city:  $('uCity').value.trim(),
+      area:  $('uArea').value.trim(),
+      topic: $('uTopic').value.trim(),
+      room:  $('uRoom').value.trim() || undefined,
+      langs: ['English']
+    })
+      .then(function(guide){
+        $('uPass').value = '';
+        LT.toast('Account created. You are signed in.', 'good');
+        renderAccount(guide);
+      })
+      .catch(function(err){
+        var mapped = markServerErr(err, {
+          name:'uName', email:'uEmail', password:'uPass',
+          city:'uCity', area:'uArea', topic:'uTopic', room:'uRoom'
+        });
+        if (!mapped) LT.toast(err.message, 'bad');
+      })
+      .then(function(){ btn.disabled = false; btn.textContent = 'Create my guide account'; });
+  });
+
+  /* ---------- signed-in panel ---------- */
+
+  function renderAccount(guide){
+    showAuth('acct');
+    $('acctAv').textContent = guide.initial || guide.name.slice(0,1).toUpperCase();
+    $('acctAv').setAttribute('style', LT.avatarStyle(guide.hue || 150));
+    $('acctName').textContent = guide.name;
+    $('acctWhere').textContent = guide.area + ' · ' + guide.city;
+    $('acctRoom').textContent = guide.room || 'not set';
+    $('acctDone').textContent = guide.sessions || 0;
+    $('acctLive').checked = !!guide.live;
+
+    $('acctLive').onchange = function(){
+      var on = $('acctLive').checked;
+      $('acctLive').disabled = true;
+      LT.api('PATCH', '/api/guides/me', { live: on })
+        .then(function(res){
+          LT.toast(res.guide.live ? 'You are on the map as walking now.' : 'You are off the map.',
+                   res.guide.live ? 'good' : '');
+        })
+        .catch(function(err){ $('acctLive').checked = !on; LT.toast(err.message, 'bad'); })
+        .then(function(){ $('acctLive').disabled = false; });
+    };
+
+    $('acctOpen').onclick = function(){
+      location.href = guide.room ? 'index.html?room=' + encodeURIComponent(guide.room) : 'index.html';
+    };
+
+    $('acctOut').onclick = function(){
+      LT.auth.logout().then(function(){
+        LT.toast('Signed out.');
+        showAuth('in');
+      });
+    };
+
+    LT.api('GET', '/api/guides/me/bookings')
+      .then(function(res){
+        var open = (res.bookings || []).filter(function(b){
+          return b.status === 'requested' || b.status === 'accepted';
+        });
+        $('acctBookings').innerHTML = open.length
+          ? '<div class="label">Waiting on you</div>' + open.slice(0,5).map(function(b){
+              return '<div class="bk"><span class="t"><b>' + LT.esc(b.traveler_name) + '</b>' +
+                '<span>' + b.minutes + ' min · ' + LT.esc(b.status) + '</span></span>' +
+                '<span class="r">' + LT.baht(b.hold_satang / 100) + '</span></div>';
+            }).join('')
+          : '<div class="note plain">No walk requests yet.</div>';
+      })
+      .catch(function(){ $('acctBookings').innerHTML = ''; });
+  }
+
+  /* resume an existing session on load */
+  if (LT.auth.signedIn()){
+    tab('in');
+    LT.auth.me()
+      .then(renderAccount)
+      .catch(function(){ showAuth('in'); });
+  }
 
   $('hostCode').addEventListener('input', function(){
     $('hostCode').classList.remove('bad');

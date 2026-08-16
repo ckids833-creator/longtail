@@ -1,21 +1,27 @@
 /* ============================================================
-   Longtail — demo data + shared helpers
+   Longtail — API client, fallback data, shared helpers
    Loaded as a plain script (no modules) so the pages also work
    when opened straight off the filesystem.
 
-   >>> EVERYTHING IN GUIDES[] IS FAKE except the one entry marked
-   >>> real:true. While DEMO_MODE is true the UI stamps a DEMO
-   >>> badge on fake guides and shows a bar at the bottom of the
-   >>> page. Do not switch DEMO_MODE off until GUIDES is real
-   >>> people — showing invented "LIVE NOW" guides to a paying
-   >>> tester without saying so is the kind of thing that ends a
-   >>> pilot badly.
+   Live data comes from the Worker at window.LONGTAIL_API (see
+   config.js). The GUIDES and PLACES arrays below are the offline
+   fallback used when that call fails, so the site still renders
+   with the backend down.
+
+   >>> EVERY GUIDE BELOW IS FAKE except the one marked real:true.
+   >>> Rows from the API carry their own demo flag, straight from
+   >>> the is_demo column. The UI stamps a DEMO badge on any of
+   >>> them and shows a bar at the bottom of the page. Do not turn
+   >>> that off until the directory is real people — showing
+   >>> invented "LIVE NOW" guides to a paying tester without
+   >>> saying so is the kind of thing that ends a pilot badly.
    ============================================================ */
 
 var LT = (function () {
   'use strict';
 
-  var DEMO_MODE = true;
+  var DEMO_MODE = true;   // recomputed by load() once real rows arrive
+  var OFFLINE   = false;  // true when the API could not be reached
 
   /* ---- economics: single source of truth, mirrors index.html ---- */
   var RATE_BAHT_PER_MIN = 15;
@@ -296,6 +302,119 @@ var LT = (function () {
 
   var CATEGORIES = ['All','Street food','Temples','Markets','History','Neighbourhoods','Nature','Nightlife'];
 
+  /* ============================================================
+     API client
+     ============================================================ */
+
+  var TOKEN_KEY = 'lt_token';
+
+  function apiBase(){ return (window.LONGTAIL_API || '').replace(/\/+$/, ''); }
+  function token(){ try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function setToken(t){
+    try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); }
+    catch (e) { /* private mode */ }
+  }
+
+  /**
+   * Every call goes through here. Rejects with an Error whose .message is
+   * the server's own wording and whose .field names the offending input,
+   * so forms can point at the right box.
+   */
+  function api(method, path, body){
+    var base = apiBase();
+    if (!base) return Promise.reject(new Error('No API configured. Set window.LONGTAIL_API in config.js.'));
+
+    var headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    var t = token();
+    if (t) headers['Authorization'] = 'Bearer ' + t;
+
+    return fetch(base + path, {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (res) {
+      var ctype = res.headers.get('content-type') || '';
+      if (ctype.indexOf('application/json') === -1) {
+        throw new Error('The server returned ' + res.status + ' instead of JSON.');
+      }
+      return res.json().then(function (data) {
+        if (!res.ok) {
+          var err = new Error(data.error || ('Request failed (' + res.status + ')'));
+          err.status = res.status;
+          err.field = data.field;
+          // A dead session should not leave a stale token lying around.
+          if (res.status === 401 && t) setToken('');
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* rows from the API use satang and a demo flag; the pages want baht */
+  function adaptGuide(g){
+    return {
+      id: g.id, name: g.name, initial: g.initial, city: g.city, area: g.area,
+      lat: g.lat, lng: g.lng, topic: g.topic, blurb: g.blurb,
+      rate: (g.rate_satang || 0) / 100,
+      rate_satang: g.rate_satang,
+      langs: g.langs || [], tags: g.tags || [], hue: g.hue,
+      room: g.room, live: !!g.live, real: !g.demo,
+      rating: g.rating, sessions: g.sessions
+    };
+  }
+
+  function replace(arr, next){
+    arr.length = 0;
+    for (var i = 0; i < next.length; i++) arr.push(next[i]);
+  }
+
+  /**
+   * Pull the directory. Resolves either way — a backend that is down
+   * degrades to the bundled demo rows rather than an empty page.
+   */
+  function load(){
+    if (!apiBase()){
+      OFFLINE = true;
+      return Promise.resolve({ online: false, reason: 'No API configured.' });
+    }
+    return Promise.all([ api('GET', '/api/guides'), api('GET', '/api/places') ])
+      .then(function (res) {
+        var guides = (res[0].guides || []).map(adaptGuide);
+        if (guides.length) replace(GUIDES, guides);
+        if ((res[1].places || []).length) replace(PLACES, res[1].places);
+        OFFLINE = false;
+        DEMO_MODE = GUIDES.some(function (g) { return !g.real; });
+        return { online: true };
+      })
+      .catch(function (err) {
+        OFFLINE = true;
+        DEMO_MODE = true;
+        return { online: false, reason: err.message };
+      });
+  }
+
+  /* ---- guide auth ---- */
+  var auth = {
+    token: token,
+    signedIn: function(){ return !!token(); },
+    signup: function(payload){
+      return api('POST', '/api/auth/signup', payload).then(function (d) {
+        setToken(d.token); return d.guide;
+      });
+    },
+    login: function(email, password){
+      return api('POST', '/api/auth/login', { email: email, password: password })
+        .then(function (d) { setToken(d.token); return d.guide; });
+    },
+    me: function(){ return api('GET', '/api/auth/me').then(function (d) { return d.guide; }); },
+    logout: function(){
+      return api('POST', '/api/auth/logout').catch(function(){ /* already dead */ })
+        .then(function(){ setToken(''); });
+    }
+  };
+
   /* ------------------------------------------------------------
      helpers
      ------------------------------------------------------------ */
@@ -322,7 +441,18 @@ var LT = (function () {
   /* walk codes must satisfy api/token.js: 3-40 of [A-Za-z0-9_-] */
   var CODE_RE = /^[a-zA-Z0-9_-]{3,40}$/;
   function validCode(c){ return CODE_RE.test(String(c||'').trim()); }
-  function watchUrl(code){ return 'watch.html?room=' + encodeURIComponent(String(code).trim()); }
+
+  /**
+   * watch.html already accepts ?api= to override its token endpoint, so we
+   * hand it the Worker rather than editing that file. Without this the
+   * traveller would fall back to the old Vercel /api/token.
+   */
+  function watchUrl(code){
+    var url = 'watch.html?room=' + encodeURIComponent(String(code).trim());
+    var base = apiBase();
+    if (base) url += '&api=' + encodeURIComponent(base + '/api/token');
+    return url;
+  }
 
   /* search across both lists */
   function search(q){
@@ -380,11 +510,23 @@ var LT = (function () {
   }
 
   function demoBar(){
-    if (!DEMO_MODE) return '';
-    return '<div class="demo-bar">' +
-      '<b>Demo data.</b> Guides marked DEMO are placeholders. ' +
-      'One real walk is live: Yaowarat. Nothing here charges a card.' +
-      '</div>';
+    if (!DEMO_MODE && !OFFLINE) return '';
+    var msg = OFFLINE
+      ? '<b>Backend unreachable.</b> Showing bundled sample data — nothing on this page is live. ' +
+        'Check window.LONGTAIL_API in config.js and the Worker\'s ALLOWED_ORIGINS.'
+      : '<b>Demo data.</b> Guides marked DEMO are placeholders. Nothing here charges a card.';
+    return '<div class="demo-bar" id="demoBar">' + msg + '</div>';
+  }
+
+  /** Redraw the bar after load() has learned whether the API answered. */
+  function refreshDemoBar(){
+    var existing = document.getElementById('demoBar');
+    if (existing) existing.remove();
+    document.body.classList.toggle('has-demo', DEMO_MODE || OFFLINE);
+    var html = demoBar();
+    if (html) document.body.insertAdjacentHTML('beforeend', html);
+    document.documentElement.style.setProperty(
+      '--demo-h', (DEMO_MODE || OFFLINE) ? '38px' : '0px');
   }
 
   /* fade-up on scroll */
@@ -428,7 +570,10 @@ var LT = (function () {
   }
 
   return {
-    DEMO_MODE: DEMO_MODE,
+    /* DEMO_MODE and OFFLINE change after load(), so read them through these
+       rather than destructuring once at page start. */
+    get DEMO_MODE(){ return DEMO_MODE; },
+    get OFFLINE(){ return OFFLINE; },
     RATE_BAHT_PER_MIN: RATE_BAHT_PER_MIN,
     PILOT_PRICE_BAHT: PILOT_PRICE_BAHT,
     PILOT_MINUTES: PILOT_MINUTES,
@@ -439,6 +584,8 @@ var LT = (function () {
     guide: guide, place: place, liveGuides: liveGuides, guidesNear: guidesNear,
     distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl,
     search: search, avatarStyle: avatarStyle, esc: esc,
-    toast: toast, boot: boot, watchReveals: watchReveals, escClose: escClose
+    toast: toast, boot: boot, watchReveals: watchReveals, escClose: escClose,
+    api: api, load: load, auth: auth, refreshDemoBar: refreshDemoBar,
+    apiBase: apiBase
   };
 })();

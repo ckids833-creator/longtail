@@ -146,12 +146,12 @@
   <div class="sheet-foot" id="dtFoot"></div>
 </div>
 
+<script src="config.js"></script>
 <script src="data.js"></script>
 <script>
 (function(){
   'use strict';
   LT.boot('interest');
-  document.documentElement.style.setProperty('--demo-h', LT.DEMO_MODE ? '38px' : '0px');
 
   var $ = function(id){ return document.getElementById(id); };
   var cat = 'All', q = '';
@@ -295,6 +295,13 @@
   }
 
   render();
+
+  // Swap the bundled sample rows for the live directory as soon as it lands.
+  LT.load().then(function(state){
+    LT.refreshDemoBar();
+    render();
+    if (!state.online) LT.toast('Live directory unavailable — showing sample data.', 'bad');
+  });
 })();
 </script>
 </body>

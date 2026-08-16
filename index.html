@@ -334,7 +334,14 @@ async function start(){
   $('btnStart').disabled=true; $('btnStart').textContent='Connecting…';
 
   try{
-    const res=await fetch(apiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},
+    // The Worker backend only hands out a guide token to a signed-in guide who
+    // owns this walk code. guides.html puts that session token in lt_token.
+    // The old Vercel endpoint ignores the header, so this is safe either way.
+    const headers={'Content-Type':'application/json'};
+    let authTok=''; try{ authTok=localStorage.getItem('lt_token')||''; }catch{}
+    if(authTok) headers['Authorization']='Bearer '+authTok;
+
+    const res=await fetch(apiUrl(),{method:'POST',headers,
       body:JSON.stringify({room:roomCode,name:'Guide',role:'guide'})});
     const ctype=res.headers.get('content-type')||'';
     if(!ctype.includes('application/json')){
@@ -343,7 +350,11 @@ async function start(){
         : `Token server returned ${res.status} instead of JSON.`);
     }
     const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Token request failed');
+    if(!res.ok){
+      if(res.status===401) throw new Error('Sign in on the Join guides page first — this walk server checks who you are.');
+      if(res.status===403) throw new Error(`That walk code is not yours. Your account owns a different one.`);
+      throw new Error(data.error||'Token request failed');
+    }
 
     room=new LK.Room({
       adaptiveStream:true, dynacast:true,
