@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<meta name="robots" content="noindex">
+<title>Walk for Longtail — Join guides</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{padding-bottom:var(--demo-h,0px);}
+  .page{max-width:1080px;}
+
+  .split{display:grid;gap:26px;grid-template-columns:1fr;align-items:start;}
+  @media (min-width:980px){ .split{grid-template-columns:1.05fr .95fr;gap:34px;} }
+
+  .panel{border-radius:var(--r-xl);padding:clamp(20px,3vw,30px);}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;padding:4px;border-radius:999px;margin-bottom:24px;
+    background:rgba(255,255,255,.04);border:1px solid var(--glass-line);}
+  .tab{flex:1;padding:12px;border-radius:999px;font-size:14px;font-weight:600;color:var(--dim);
+    transition:all .35s var(--ease);}
+  .tab.on{background:rgba(87,211,146,.16);color:var(--green-soft);
+    box-shadow:inset 0 0 0 1px rgba(87,211,146,.34);}
+
+  .pane{display:none;animation:fade-up .5s var(--ease-out);}
+  .pane.on{display:block;}
+  @keyframes fade-up{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+  .row{display:grid;gap:12px;grid-template-columns:1fr 1fr;}
+  @media (max-width:560px){ .row{grid-template-columns:1fr;} }
+
+  .check{display:flex;gap:11px;align-items:flex-start;padding:14px;border-radius:var(--r-sm);
+    background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer;
+    transition:border-color .25s,background .25s;}
+  .check:hover{border-color:rgba(87,211,146,.34);}
+  .check input{margin-top:2px;width:17px;height:17px;accent-color:var(--green);flex-shrink:0;cursor:pointer;}
+  .check span{font-size:13px;color:var(--dim);line-height:1.6;}
+  .check b{color:var(--paper);font-weight:600;}
+
+  /* right column */
+  .why{border-radius:var(--r-xl);padding:clamp(20px,3vw,28px);margin-bottom:16px;}
+  .why h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:20px;margin-bottom:16px;}
+  .pt{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--line);}
+  .pt:last-child{border-bottom:none;padding-bottom:0;}
+  .pt .n{flex-shrink:0;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:rgba(87,211,146,.15);color:var(--green-soft);
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
+  .pt .t b{display:block;font-size:14.5px;font-weight:600;margin-bottom:4px;}
+  .pt .t p{font-size:13px;color:var(--dim);line-height:1.6;}
+
+  /* earnings calculator */
+  .calc{border-radius:var(--r-xl);padding:clamp(20px,3vw,28px);}
+  .calc h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:20px;margin-bottom:6px;}
+  .calc .sub{font-size:12.5px;color:var(--faint);line-height:1.6;margin-bottom:20px;}
+  .slider{margin-bottom:18px;}
+  .slider .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
+  .slider .top .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);}
+  .slider .top .v{font-size:16px;font-weight:650;color:var(--green-soft);}
+  input[type=range]{width:100%;height:5px;border-radius:99px;appearance:none;cursor:pointer;
+    background:linear-gradient(90deg,var(--green) var(--pct,50%),rgba(255,255,255,.10) var(--pct,50%));}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;
+    background:var(--green-soft);border:3px solid #04120C;box-shadow:0 0 14px var(--glow);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+    background:var(--green-soft);border:3px solid #04120C;box-shadow:0 0 14px var(--glow);cursor:pointer;border-width:3px;}
+
+  .out{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .out div{border-radius:var(--r-sm);padding:14px;background:rgba(87,211,146,.08);
+    border:1px solid rgba(87,211,146,.22);}
+  .out .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);}
+  .out .v{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:27px;
+    color:var(--green-soft);margin-top:5px;line-height:1;}
+
+  .note{border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;line-height:1.65;
+    background:rgba(232,163,61,.09);border:1px solid rgba(232,163,61,.26);color:var(--saffron);}
+  .note.plain{background:rgba(255,255,255,.04);border-color:var(--line);color:var(--dim);}
+  .note a{color:inherit;text-decoration:underline;}
+
+  .done{text-align:center;padding:14px 0;}
+  .done .tick{width:66px;height:66px;border-radius:50%;margin:0 auto 20px;display:grid;place-items:center;
+    background:rgba(87,211,146,.14);border:1px solid rgba(87,211,146,.4);font-size:30px;
+    animation:pop .55s var(--ease-out);}
+  @keyframes pop{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .done h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:26px;margin-bottom:10px;}
+  .done p{font-size:14px;color:var(--dim);line-height:1.7;margin-bottom:20px;}
+  .stack > * + *{margin-top:10px;}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="page-head reveal in">
+    <h1>Walk your city.<br><em>Get paid by the minute.</em></h1>
+    <p class="lede">
+      Someone who can’t get on a plane pays to see your street through your phone. You walk,
+      they steer. ฿15 a minute, paid out on your own schedule, and you can say no to any
+      walk without giving a reason.
+    </p>
+  </header>
+
+  <div class="split">
+    <!-- ============ left: apply / sign in ============ -->
+    <section class="panel glass reveal">
+      <div class="tabs" role="tablist">
+        <button class="tab on" id="tApply" role="tab" aria-selected="true" type="button">Apply to guide</button>
+        <button class="tab" id="tIn" role="tab" aria-selected="false" type="button">Sign in</button>
+      </div>
+
+      <!-- ---------- apply ---------- -->
+      <div class="pane on" id="pApply" role="tabpanel">
+        <form id="applyForm" novalidate>
+          <div class="row">
+            <div class="field">
+              <label class="label" for="fName">Your name</label>
+              <input class="input" id="fName" name="name" autocomplete="name" placeholder="Nont" required>
+              <div class="err-text"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="fContact">Phone or LINE ID</label>
+              <input class="input" id="fContact" name="contact" placeholder="08x xxx xxxx" required>
+              <div class="err-text"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="fEmail">Email</label>
+            <input class="input" id="fEmail" name="email" type="email" autocomplete="email"
+                   placeholder="you@example.com" required>
+            <div class="err-text"></div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="fCity">City</label>
+              <input class="input" id="fCity" name="city" placeholder="Bangkok" required>
+              <div class="err-text"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="fArea">Area you’d walk</label>
+              <input class="input" id="fArea" name="area" placeholder="Yaowarat, Talad Noi" required>
+              <div class="err-text"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="fTopic">What would you show someone?</label>
+            <textarea class="input" id="fTopic" name="topic" required
+              placeholder="One walk you could do well. Where it starts, what happens, what time of day it works."></textarea>
+            <div class="err-text"></div>
+            <p class="hint">This is the part we actually read. Be specific — a street and a time beats a list of landmarks.</p>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="fLangs">Languages</label>
+              <input class="input" id="fLangs" name="langs" placeholder="ไทย, English" required>
+              <div class="err-text"></div>
+            </div>
+            <div class="field">
+              <label class="label" for="fWhen">Usually free</label>
+              <select class="input" id="fWhen" name="when">
+                <option>Weekday evenings</option>
+                <option>Weekday daytime</option>
+                <option>Weekends</option>
+                <option>Most of the time</option>
+                <option>Irregular — I’d say when</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label" for="fPhone">Phone you’d use</label>
+              <input class="input" id="fPhone" name="phone" placeholder="iPhone 13 / Samsung A54">
+            </div>
+            <div class="field">
+              <label class="label" for="fData">Mobile data</label>
+              <select class="input" id="fData" name="data">
+                <option>Unlimited plan</option>
+                <option>Large plan (30GB+)</option>
+                <option>Small plan</option>
+                <option>Not sure</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="check">
+              <input type="checkbox" id="fOk" required>
+              <span><b>I understand how this works.</b> Nothing I stream is recorded. I can decline any
+              request and end any walk at any time, keeping the minutes I earned, without explaining why.
+              I’m responsible for my own safety on the street.</span>
+            </label>
+            <div class="err-text" id="okErr"></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" id="applyGo" type="submit">Send my application</button>
+          <p class="hint" style="text-align:center">
+            Goes to a real person, not a queue. Expect a reply within a few days.
+          </p>
+        </form>
+
+        <div id="applyDone" style="display:none">
+          <div class="done">
+            <div class="tick">✓</div>
+            <h3>Application saved</h3>
+            <p id="doneMsg"></p>
+            <div class="note plain">
+              This prototype has no server behind the form yet — your answers are stored in this
+              browser only. Download them and send them over so nothing is lost.
+            </div>
+            <div class="stack" style="margin-top:18px">
+              <button class="btn btn-primary btn-block" id="dlBtn" type="button">Download my answers (JSON)</button>
+              <button class="btn btn-ghost btn-block" id="againBtn" type="button">Edit and send again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- sign in ---------- -->
+      <div class="pane" id="pIn" role="tabpanel">
+        <form id="inForm" novalidate>
+          <div class="field">
+            <label class="label" for="iEmail">Email</label>
+            <input class="input" id="iEmail" type="email" autocomplete="username" placeholder="you@example.com">
+          </div>
+          <div class="field">
+            <label class="label" for="iPass">Password</label>
+            <input class="input" id="iPass" type="password" autocomplete="current-password" placeholder="••••••••">
+          </div>
+          <button class="btn btn-glass btn-block" type="submit">Sign in</button>
+        </form>
+
+        <div class="note" style="margin-top:16px">
+          Guide accounts aren’t built yet. Nothing you type above is stored or sent anywhere.
+          During the pilot, guides go straight into the walk app with a code.
+        </div>
+
+        <div style="margin-top:26px;padding-top:22px;border-top:1px solid var(--line)">
+          <div class="label">Already guiding — open the walk app</div>
+          <div class="field">
+            <input class="input" id="hostCode" autocomplete="off" autocapitalize="off" spellcheck="false"
+                   placeholder="Walk code, e.g. yaowarat" maxlength="40">
+            <div class="err-text" id="hostErr"></div>
+          </div>
+          <button class="btn btn-primary btn-block" id="hostGo" type="button">Open the guide app →</button>
+          <p class="hint">
+            Takes you to the camera view. Leave the code empty to open the app and set one there.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ right: how it works + calculator ============ -->
+    <aside>
+      <section class="why glass reveal">
+        <h3>How a walk goes</h3>
+        <div class="pt"><span class="n">1</span><span class="t">
+          <b>A request comes in</b>
+          <p>Someone picks your area and a length. You see what they want before you accept — and declining costs you nothing.</p>
+        </span></div>
+        <div class="pt"><span class="n">2</span><span class="t">
+          <b>You walk, they steer</b>
+          <p>Directions land on your screen as big prompts with a buzz. Turn left. Get closer. What’s that. You talk, they listen.</p>
+        </span></div>
+        <div class="pt"><span class="n">3</span><span class="t">
+          <b>Nothing is recorded</b>
+          <p>No video is stored, ever. Not by us, not by them. It matters for the people you film without asking — vendors, passers-by.</p>
+        </span></div>
+        <div class="pt"><span class="n">4</span><span class="t">
+          <b>You end it whenever</b>
+          <p>Uncomfortable, unsafe, or just done — end the walk and keep every minute you earned. No explanation required.</p>
+        </span></div>
+      </section>
+
+      <section class="calc glass reveal">
+        <h3>What it pays</h3>
+        <p class="sub">
+          ฿<span id="rateTxt">15</span> a minute, minus a 12% platform fee. Move the sliders honestly.
+        </p>
+
+        <div class="slider">
+          <div class="top"><span class="k">Minutes per walk</span><span class="v" id="vMin">25 min</span></div>
+          <input type="range" id="sMin" min="10" max="60" step="5" value="25">
+        </div>
+        <div class="slider">
+          <div class="top"><span class="k">Walks per week</span><span class="v" id="vWalks">4</span></div>
+          <input type="range" id="sWalks" min="1" max="25" step="1" value="4">
+        </div>
+        <div class="slider">
+          <div class="top"><span class="k">Hours online per week</span><span class="v" id="vHours">10 h</span></div>
+          <input type="range" id="sHours" min="2" max="50" step="1" value="10">
+        </div>
+
+        <div class="out">
+          <div><div class="k">You keep / week</div><div class="v" id="oWeek">฿0</div></div>
+          <div><div class="k">Per hour online</div><div class="v" id="oHour">฿0</div></div>
+        </div>
+
+        <div class="note" id="calcNote"></div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  'use strict';
+  LT.boot('guides');
+  document.documentElement.style.setProperty('--demo-h', LT.DEMO_MODE ? '38px' : '0px');
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------- tabs ---------- */
+  function tab(which){
+    var apply = which === 'apply';
+    $('tApply').classList.toggle('on', apply);
+    $('tIn').classList.toggle('on', !apply);
+    $('tApply').setAttribute('aria-selected', String(apply));
+    $('tIn').setAttribute('aria-selected', String(!apply));
+    $('pApply').classList.toggle('on', apply);
+    $('pIn').classList.toggle('on', !apply);
+  }
+  $('tApply').onclick = function(){ tab('apply'); };
+  $('tIn').onclick    = function(){ tab('in'); };
+  if (location.hash === '#signin') tab('in');
+
+  /* ---------- application form ---------- */
+  var form = $('applyForm');
+  var required = ['fName','fContact','fEmail','fCity','fArea','fTopic','fLangs'];
+
+  function fieldErr(id, msg){
+    var el = $(id);
+    var box = el.parentElement.querySelector('.err-text');
+    el.classList.toggle('bad', !!msg);
+    if (box){ box.textContent = msg || ''; box.classList.toggle('on', !!msg); }
+    return !msg;
+  }
+
+  required.forEach(function(id){
+    $(id).addEventListener('input', function(){ fieldErr(id, ''); });
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var ok = true, firstBad = null;
+
+    required.forEach(function(id){
+      var v = $(id).value.trim();
+      var msg = '';
+      if (!v) msg = 'Needed.';
+      else if (id === 'fEmail' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) msg = 'That email doesn’t look right.';
+      else if (id === 'fTopic' && v.length < 25) msg = 'A bit more — what would we actually see?';
+      if (msg){ ok = false; if (!firstBad) firstBad = id; }
+      fieldErr(id, msg);
+    });
+
+    var agreed = $('fOk').checked;
+    $('okErr').textContent = agreed ? '' : 'Please confirm you’ve read this.';
+    $('okErr').classList.toggle('on', !agreed);
+    if (!agreed){ ok = false; if (!firstBad) firstBad = 'fOk'; }
+
+    if (!ok){
+      $(firstBad).scrollIntoView({ behavior:'smooth', block:'center' });
+      if ($(firstBad).focus) $(firstBad).focus({ preventScroll:true });
+      LT.toast('A few fields still need filling in.', 'bad');
+      return;
+    }
+
+    var data = {
+      submittedAt: new Date().toISOString(),
+      name: $('fName').value.trim(),
+      contact: $('fContact').value.trim(),
+      email: $('fEmail').value.trim(),
+      city: $('fCity').value.trim(),
+      area: $('fArea').value.trim(),
+      topic: $('fTopic').value.trim(),
+      languages: $('fLangs').value.trim(),
+      availability: $('fWhen').value,
+      phone: $('fPhone').value.trim(),
+      dataPlan: $('fData').value,
+      acknowledgedTerms: true
+    };
+
+    try {
+      var all = JSON.parse(localStorage.getItem('lt_guide_applications') || '[]');
+      all.push(data);
+      localStorage.setItem('lt_guide_applications', JSON.stringify(all));
+    } catch (err) { /* private browsing — the download below still works */ }
+
+    $('doneMsg').textContent = 'Thanks, ' + data.name + '. We’ve got ' + data.area +
+      ' in ' + data.city + ' down as your patch.';
+    form.style.display = 'none';
+    $('applyDone').style.display = 'block';
+    $('applyDone').scrollIntoView({ behavior:'smooth', block:'center' });
+    LT.toast('Application saved in this browser.', 'good');
+
+    $('dlBtn').onclick = function(){
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'longtail-guide-' +
+        data.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    };
+    $('againBtn').onclick = function(){
+      $('applyDone').style.display = 'none';
+      form.style.display = 'block';
+      form.scrollIntoView({ behavior:'smooth', block:'start' });
+    };
+  });
+
+  /* ---------- sign in (not wired) ---------- */
+  $('inForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    LT.toast('Guide accounts aren’t live yet — nothing was sent.', 'bad');
+  });
+
+  $('hostCode').addEventListener('input', function(){
+    $('hostCode').classList.remove('bad');
+    $('hostErr').classList.remove('on');
+  });
+  $('hostCode').addEventListener('keydown', function(e){ if (e.key === 'Enter') openGuideApp(); });
+  $('hostGo').onclick = openGuideApp;
+
+  function openGuideApp(){
+    var c = $('hostCode').value.trim();
+    if (!c){ location.href = 'index.html'; return; }
+    if (!LT.validCode(c)){
+      $('hostCode').classList.add('bad');
+      $('hostErr').textContent = '3–40 characters: letters, numbers, dashes, underscores.';
+      $('hostErr').classList.add('on');
+      return;
+    }
+    location.href = 'index.html?room=' + encodeURIComponent(c);
+  }
+
+  /* ---------- earnings calculator ---------- */
+  var FEE = 0.12;
+  $('rateTxt').textContent = LT.RATE_BAHT_PER_MIN;
+
+  function paint(el){
+    var pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--pct', pct + '%');
+  }
+
+  function calc(){
+    var mins  = +$('sMin').value;
+    var walks = +$('sWalks').value;
+    var hours = +$('sHours').value;
+
+    $('vMin').textContent   = mins + ' min';
+    $('vWalks').textContent = walks;
+    $('vHours').textContent = hours + ' h';
+    [$('sMin'), $('sWalks'), $('sHours')].forEach(paint);
+
+    var gross  = mins * walks * LT.RATE_BAHT_PER_MIN;
+    var net    = Math.round(gross * (1 - FEE));
+    var perHr  = Math.round(net / hours);
+    var busy   = (mins * walks) / (hours * 60);
+
+    $('oWeek').textContent = LT.baht(net);
+    $('oHour').textContent = LT.baht(perHr);
+
+    var note = $('calcNote');
+    if (perHr < 60){
+      note.className = 'note';
+      note.innerHTML = 'At this density you’re earning <b>' + LT.baht(perHr) +
+        ' an hour online</b> — below Thailand’s minimum wage. Walking pays well; ' +
+        'waiting pays nothing. Only go online when you would be out anyway.';
+    } else if (busy > 0.55){
+      note.className = 'note plain';
+      note.innerHTML = 'That’s <b>' + Math.round(busy*100) + '% of your online time spent walking</b>. ' +
+        'Optimistic for a new marketplace — worth checking against what you actually get.';
+    } else {
+      note.className = 'note plain';
+      note.innerHTML = 'Walking time is <b>' + Math.round(busy*100) + '%</b> of your time online. ' +
+        'The other ' + (100 - Math.round(busy*100)) + '% pays nothing, so treat this as a top-up, ' +
+        'not a wage.';
+    }
+  }
+
+  ['sMin','sWalks','sHours'].forEach(function(id){
+    $(id).addEventListener('input', calc);
+  });
+  calc();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<meta name="robots" content="noindex">
+<title>Places worth walking — Longtail</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{padding-bottom:var(--demo-h,0px);}
+
+  .toolbar{
+    position:sticky;top:calc(var(--nav-h) + 8px);z-index:30;
+    display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    padding:12px;border-radius:var(--r-lg);margin-bottom:26px;
+  }
+  .toolbar .searchwrap{position:relative;flex:1;min-width:210px;}
+  .toolbar .mag{position:absolute;left:15px;top:50%;transform:translateY(-50%);opacity:.5;pointer-events:none;}
+  #q{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--glass-line);
+     border-radius:999px;padding:13px 16px 13px 40px;color:var(--paper);font-size:14.5px;
+     transition:border-color .25s,background .25s,box-shadow .25s;}
+  #q::placeholder{color:var(--faint);}
+  #q:focus{outline:none;border-color:var(--green);background:rgba(87,211,146,.07);
+           box-shadow:0 0 0 3px var(--glow-soft);}
+  .cats{display:flex;gap:6px;flex-wrap:wrap;}
+
+  .count{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:16px;}
+
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));}
+
+  .pcard{
+    position:relative;text-align:left;border-radius:var(--r-lg);overflow:hidden;cursor:pointer;
+    background:var(--glass);border:1px solid var(--glass-line);
+    display:flex;flex-direction:column;min-height:262px;
+  }
+  .pcard .art{
+    position:relative;height:132px;flex-shrink:0;display:grid;place-items:center;
+    font-size:46px;overflow:hidden;
+  }
+  .pcard .art::before{
+    content:'';position:absolute;inset:0;
+    background:
+      radial-gradient(120% 100% at 22% 8%, hsla(var(--h),64%,52%,.42) 0%, transparent 62%),
+      radial-gradient(110% 110% at 84% 96%, hsla(var(--h2),58%,42%,.34) 0%, transparent 60%),
+      linear-gradient(160deg,rgba(255,255,255,.05),transparent 58%);
+    transition:transform 1.1s var(--ease-out);
+  }
+  .pcard:hover .art::before{transform:scale(1.14) rotate(2deg);}
+  .pcard .art span{position:relative;z-index:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6));
+    transition:transform .55s var(--ease-out);}
+  .pcard:hover .art span{transform:translateY(-4px) scale(1.08);}
+  .pcard .art .cat{
+    position:absolute;top:12px;left:12px;z-index:2;
+    padding:5px 10px;border-radius:999px;background:rgba(7,11,10,.55);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--paper);
+  }
+  .pcard .body{padding:16px 17px 17px;display:flex;flex-direction:column;flex:1;}
+  .pcard h3{font-size:17px;font-weight:650;line-height:1.25;}
+  .pcard .city{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--faint);margin-top:6px;}
+  .pcard p{font-size:13px;color:var(--dim);line-height:1.6;margin-top:10px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .pcard .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-top:auto;padding-top:14px;}
+  .pcard .who{display:flex;align-items:center;}
+  .pcard .who .avatar{width:26px;height:26px;font-size:12px;border:2px solid var(--ink-1);margin-left:-8px;}
+  .pcard .who .avatar:first-child{margin-left:0;}
+  .pcard .who em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:9px;}
+  .pcard .go{font-size:12.5px;color:var(--green-soft);opacity:0;transform:translateX(-6px);
+    transition:all .35s var(--ease-out);}
+  .pcard:hover .go{opacity:1;transform:none;}
+
+  .empty{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--faint);font-size:14px;}
+
+  /* detail */
+  .d-art{height:150px;margin:-18px -22px 20px;display:grid;place-items:center;font-size:56px;position:relative;overflow:hidden;}
+  .d-art::before{content:'';position:absolute;inset:0;
+    background:
+      radial-gradient(120% 100% at 22% 8%, hsla(var(--h),64%,52%,.45) 0%, transparent 62%),
+      radial-gradient(110% 110% at 84% 96%, hsla(var(--h2),58%,42%,.36) 0%, transparent 60%);}
+  .d-art span{position:relative;z-index:1;}
+  .d-blurb{font-size:15px;color:var(--dim);line-height:1.75;margin-bottom:18px;}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:22px;}
+  .fact{border-radius:var(--r-sm);padding:12px 13px;background:rgba(255,255,255,.04);border:1px solid var(--line);}
+  .fact .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--faint);}
+  .fact .v{font-size:14px;font-weight:600;margin-top:5px;line-height:1.4;}
+
+  .sec-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:17px;margin-bottom:12px;padding-top:4px;}
+  .grow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    padding:12px;border-radius:var(--r-md);background:rgba(255,255,255,.04);
+    border:1px solid var(--line);margin-bottom:9px;transition:all .3s var(--ease);}
+  .grow:hover{border-color:rgba(87,211,146,.4);background:rgba(87,211,146,.07);transform:translateX(3px);}
+  .grow .t{flex:1;min-width:0;}
+  .grow .t b{display:block;font-size:14.5px;font-weight:600;}
+  .grow .t span{font-size:11.5px;color:var(--faint);display:block;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .grow .r{text-align:right;flex-shrink:0;}
+  .stack > * + *{margin-top:10px;}
+  .note{border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;line-height:1.65;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim);}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="page-head reveal in">
+    <h1>Places people<br><em>keep asking for</em></h1>
+    <p class="lede">
+      The landmarks, markets and back streets travellers request most. Pick one to see what’s
+      actually there — and who’s nearby to walk it with you, live, right now.
+    </p>
+  </header>
+
+  <div class="toolbar glass reveal in">
+    <div class="searchwrap">
+      <span class="mag">⌕</span>
+      <input id="q" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Search a place, a city, a kind of thing…" aria-label="Search places">
+    </div>
+    <div class="cats" id="cats"></div>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- detail -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet center" id="detail" role="dialog" aria-modal="true" aria-labelledby="dtTitle">
+  <div class="sheet-head">
+    <div><h2 id="dtTitle">Place</h2><p id="dtSub"></p></div>
+    <button class="x" data-close type="button" aria-label="Close">✕</button>
+  </div>
+  <div class="sheet-body" id="dtBody"></div>
+  <div class="sheet-foot" id="dtFoot"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  'use strict';
+  LT.boot('interest');
+  document.documentElement.style.setProperty('--demo-h', LT.DEMO_MODE ? '38px' : '0px');
+
+  var $ = function(id){ return document.getElementById(id); };
+  var cat = 'All', q = '';
+
+  /* ---------- filters ---------- */
+  $('cats').innerHTML = LT.CATEGORIES.map(function(c){
+    return '<button class="chip' + (c===cat?' on':'') + '" data-c="' + LT.esc(c) + '" type="button">' +
+      LT.esc(c) + '</button>';
+  }).join('');
+  $('cats').querySelectorAll('[data-c]').forEach(function(b){
+    b.onclick = function(){
+      cat = b.dataset.c;
+      $('cats').querySelectorAll('[data-c]').forEach(function(x){
+        x.classList.toggle('on', x.dataset.c === cat);
+      });
+      render();
+    };
+  });
+
+  var tmr;
+  $('q').addEventListener('input', function(e){
+    clearTimeout(tmr);
+    tmr = setTimeout(function(){ q = e.target.value.trim().toLowerCase(); render(); }, 130);
+  });
+
+  /* ---------- grid ---------- */
+  function matches(p){
+    if (cat !== 'All' && p.cat !== cat) return false;
+    if (!q) return true;
+    return (p.name + ' ' + p.city + ' ' + p.cat + ' ' + p.blurb).toLowerCase().indexOf(q) !== -1;
+  }
+
+  function card(p, i){
+    var near = LT.guidesNear(p.lat, p.lng, 45);
+    var live = near.filter(function(g){ return g.live; }).length;
+    var faces = near.slice(0,3).map(function(g){
+      return '<span class="avatar" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>';
+    }).join('');
+
+    return '<button class="pcard glass-hover reveal" data-p="' + p.id + '" type="button" ' +
+      'style="transition-delay:' + Math.min(i,10)*45 + 'ms">' +
+      '<div class="art" style="--h:' + p.hue + ';--h2:' + ((p.hue+48)%360) + '">' +
+        '<span>' + p.icon + '</span>' +
+        '<span class="cat">' + LT.esc(p.cat) + '</span>' +
+      '</div>' +
+      '<div class="body">' +
+        '<h3>' + LT.esc(p.name) + '</h3>' +
+        '<div class="city">' + LT.esc(p.city) + '</div>' +
+        '<p>' + LT.esc(p.blurb) + '</p>' +
+        '<div class="foot">' +
+          '<span class="who">' + faces +
+            '<em>' + (near.length ? near.length + ' guide' + (near.length>1?'s':'') +
+              (live ? ' · ' + live + ' live' : '') : 'No guide yet') + '</em>' +
+          '</span>' +
+          '<span class="go">Open →</span>' +
+        '</div>' +
+      '</div></button>';
+  }
+
+  function render(){
+    var list = LT.PLACES.filter(matches);
+    $('count').textContent = list.length + ' of ' + LT.PLACES.length + ' places' +
+      (cat !== 'All' ? ' · ' + cat : '');
+    $('grid').innerHTML = list.length
+      ? list.map(card).join('')
+      : '<div class="empty">Nothing here yet. Try another category, or clear the search.</div>';
+    $('grid').querySelectorAll('[data-p]').forEach(function(b){
+      b.onclick = function(){ open(b.dataset.p); };
+    });
+    LT.watchReveals($('grid'));
+  }
+
+  /* ---------- detail sheet ---------- */
+  var openIds = [];
+  function show(id){ $(id).classList.add('on'); $('scrim').classList.add('on'); openIds.push(id); }
+  function hide(id){
+    $(id).classList.remove('on');
+    openIds = openIds.filter(function(x){ return x !== id; });
+    if (!openIds.length) $('scrim').classList.remove('on');
+  }
+  $('scrim').onclick = function(){ while (openIds.length) hide(openIds[openIds.length-1]); };
+  document.querySelectorAll('[data-close]').forEach(function(b){
+    b.onclick = function(){ hide(b.closest('.sheet').id); };
+  });
+  LT.escClose(function(){ if (openIds.length) hide(openIds[openIds.length-1]); });
+
+  function open(id){
+    var p = LT.place(id);
+    if (!p) return;
+    var near = LT.guidesNear(p.lat, p.lng, 45);
+
+    $('dtTitle').textContent = p.name;
+    $('dtSub').textContent = p.city + ' · ' + p.cat;
+
+    $('dtBody').innerHTML =
+      '<div class="d-art" style="--h:' + p.hue + ';--h2:' + ((p.hue+48)%360) + '">' +
+        '<span>' + p.icon + '</span></div>' +
+
+      '<p class="d-blurb">' + LT.esc(p.blurb) + '</p>' +
+
+      '<div class="facts">' +
+        '<div class="fact"><div class="k">Best time</div><div class="v">' + LT.esc(p.best) + '</div></div>' +
+        '<div class="fact"><div class="k">Guides nearby</div><div class="v">' + near.length +
+          (near.filter(function(g){return g.live;}).length
+            ? ' · <span style="color:var(--green-soft)">' +
+              near.filter(function(g){return g.live;}).length + ' live</span>' : '') +
+          '</div></div>' +
+        '<div class="fact"><div class="k">Rate</div><div class="v">' +
+          LT.baht(LT.RATE_BAHT_PER_MIN) + ' / min</div></div>' +
+      '</div>' +
+
+      '<div class="sec-title">Walk it with</div>' +
+      (near.length
+        ? near.map(function(g){
+            var demo = LT.DEMO_MODE && !g.real ? '<span class="demo-badge">demo</span>' : '';
+            return '<button class="grow" data-g="' + g.id + '" type="button">' +
+              '<span class="avatar sm" style="' + LT.avatarStyle(g.hue) + '">' +
+                LT.esc(g.initial) + '</span>' +
+              '<span class="t"><b>' + LT.esc(g.name) + ' ' + demo + '</b>' +
+                '<span>' + LT.esc(g.topic) + '</span></span>' +
+              '<span class="r">' + (g.live
+                ? '<span class="live"><i></i>live</span>'
+                : '<span class="tag">offline</span>') + '</span>' +
+            '</button>';
+          }).join('')
+        : '<div class="note">No guide covers this one yet. If you know the area, ' +
+          '<a href="guides.html" style="color:var(--green-soft)">put your name down</a>.</div>');
+
+    $('dtFoot').innerHTML = '<div class="stack">' +
+      '<a class="btn btn-primary btn-block" href="explore.html">See it on the globe →</a>' +
+      '</div>';
+
+    $('dtBody').querySelectorAll('[data-g]').forEach(function(b){
+      b.onclick = function(){
+        // hand off to the globe, which opens this guide on arrival
+        location.href = 'explore.html?guide=' + encodeURIComponent(b.dataset.g);
+      };
+    });
+
+    show('detail');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
