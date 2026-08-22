@@ -5,5 +5,8 @@
   "type": "module",
   "dependencies": {
     "livekit-server-sdk": "^2.9.7"
+  },
+  "scripts": {
+    "dev": "python -m http.server 4173"
   }
 }

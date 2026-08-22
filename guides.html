@@ -397,9 +397,16 @@ LT.start('guides').then(function(user){
     var list = sorted(LT.GUIDES.filter(matches));
     $('count').textContent = list.length + ' of ' + LT.GUIDES.length + ' guides' +
       (LT.liveGuides().length ? ' · ' + LT.liveGuides().length + ' walking now' : '');
+    // Distinguish "nobody has joined yet" from "your search matched nothing".
+    // On a newly launched directory the first one is the truth.
+    var emptyMsg = LT.GUIDES.length === 0
+      ? (LT.OFFLINE
+          ? 'We can’t reach the server right now, so guides aren’t loading. Please try again shortly.'
+          : 'No guides yet — this is brand new. Scroll down and be the first.')
+      : 'No guide matches that. Try clearing the search.';
     $('glist').innerHTML = list.length
       ? list.map(card).join('')
-      : '<div class="empty">No guide matches that. Try clearing the search.</div>';
+      : '<div class="empty">' + emptyMsg + '</div>';
     $('glist').querySelectorAll('[data-g]').forEach(function(b){
       b.onclick = function(){ openGuide(b.dataset.g); };
     });

@@ -531,7 +531,9 @@ LT.start('explore').then(function(account){
         'All guides · ' + LT.GUIDES.length + '</button>';
     $('gList').innerHTML = list.length
       ? list.map(guideCard).join('')
-      : '<div class="rempty">No guides match. Try “All guides”.</div>';
+      : '<div class="rempty">' + (LT.GUIDES.length === 0
+          ? 'No guides have joined yet.'
+          : 'Nobody is walking right now. Try “All guides”.') + '</div>';
 
     $('dFilter').querySelectorAll('[data-f]').forEach(function(b){
       b.onclick = function(){ filter = b.dataset.f; renderDrawer(); };

@@ -333,6 +333,17 @@ var LT = (function () {
       method: method,
       headers: headers,
       body: body ? JSON.stringify(body) : undefined
+    }).catch(function () {
+      // Sitting before .then, this only catches a request that never happened:
+      // backend not running, wrong port, DNS, no network. HTTP errors are not
+      // rejections and fall through to the handler below.
+      // "Failed to fetch" is the browser's wording and tells a user nothing.
+      var err = new Error(
+        'Cannot reach the Longtail API at ' + base + '. ' +
+        'Start the backend, then try again.'
+      );
+      err.offline = true;
+      throw err;
     }).then(function (res) {
       var ctype = res.headers.get('content-type') || '';
       if (ctype.indexOf('application/json') === -1) {
@@ -385,8 +396,10 @@ var LT = (function () {
     }
     return Promise.all([ api('GET', '/api/guides'), api('GET', '/api/places') ])
       .then(function (res) {
-        var guides = (res[0].guides || []).map(adaptGuide);
-        if (guides.length) replace(GUIDES, guides);
+        // Replace unconditionally. A successful response with zero guides is
+        // a fact about the world - a new directory with nobody in it yet - and
+        // must not fall through to the invented rows bundled below.
+        replace(GUIDES, (res[0].guides || []).map(adaptGuide));
         if ((res[1].places || []).length) replace(PLACES, res[1].places);
         OFFLINE = false;
         DEMO_MODE = GUIDES.some(function (g) { return !g.real; });
@@ -394,7 +407,15 @@ var LT = (function () {
       })
       .catch(function (err) {
         OFFLINE = true;
-        DEMO_MODE = true;
+        // On a public site the bundled guides must not stand in for real
+        // ones. Places are factual landmarks and stay. See
+        // LONGTAIL_ALLOW_DEMO_FALLBACK in config.js.
+        if (window.LONGTAIL_ALLOW_DEMO_FALLBACK === false) {
+          GUIDES.length = 0;
+          DEMO_MODE = false;
+        } else {
+          DEMO_MODE = true;
+        }
         return { online: false, reason: err.message };
       });
   }
@@ -655,10 +676,16 @@ var LT = (function () {
 
   function demoBar(){
     if (!DEMO_MODE && !OFFLINE) return '';
-    var msg = OFFLINE
-      ? '<b>Backend unreachable.</b> Showing bundled sample data — nothing on this page is live. ' +
-        'Check window.LONGTAIL_API in config.js and the Worker\'s ALLOWED_ORIGINS.'
-      : '<b>Demo data.</b> Guides marked DEMO are placeholders. Nothing here charges a card.';
+    var msg;
+    if (OFFLINE && window.LONGTAIL_ALLOW_DEMO_FALLBACK === false) {
+      msg = '<b>We can’t reach the server right now.</b> Guides aren’t loading. ' +
+            'This is our end, not yours — please try again shortly.';
+    } else if (OFFLINE) {
+      msg = '<b>Backend unreachable.</b> Showing bundled sample data — nothing here is live. ' +
+            'Check window.LONGTAIL_API in config.js and the Worker’s ALLOWED_ORIGINS.';
+    } else {
+      msg = '<b>Demo data.</b> Guides marked DEMO are placeholders. Nothing here charges a card.';
+    }
     return '<div class="demo-bar" id="demoBar">' + msg + '</div>';
   }
 
@@ -709,7 +736,12 @@ var LT = (function () {
     return location.pathname.split('/').pop() + location.search;
   }
   function toLogin(){
-    location.replace('login.html?next=' + encodeURIComponent(here()));
+    var url = 'login.html?next=' + encodeURIComponent(here());
+    // Carry an ?api= override across the redirect, or the login page would
+    // talk to a different backend than the page that sent you there.
+    var override = new URLSearchParams(location.search).get('api');
+    if (override) url += '&api=' + encodeURIComponent(override);
+    location.replace(url);
   }
 
   /**
