@@ -295,13 +295,26 @@ LT.start('studio').then(function(user){
     $('liveToggle').checked = !!on;
     $('goliveBox').classList.toggle('on', !!on);
     $('liveTitle').textContent = on ? 'You’re showing as walking now' : 'You’re off the map';
+    // Arriving already-live means no gesture has happened yet, so sound is
+    // still blocked. Say so rather than ringing silently at nobody.
+    setTimeout(function(){
+      if (on && !LTPush.audioReady() && $('liveSub')){
+        $('liveSub').textContent += ' Tap anywhere on this page once so your browser lets it make a sound.';
+      }
+    }, 0);
     $('liveSub').textContent = on
-      ? 'Travellers can see you on the globe. Switch off any time — you never owe anyone a reason.'
-      : 'Turn this on to show as walking now. Turn it off and you disappear — you’re never obliged to accept anything.';
+      ? 'Travellers can see you on the globe, and a walk request will ring on this page. ' +
+        'Switch off any time — you never owe anyone a reason.'
+      : 'Turn this on to show as walking now, and requests will ring here. Turn it off and you ' +
+        'disappear — you’re never obliged to accept anything.';
   }
 
   $('liveToggle').onchange = function(){
     var on = $('liveToggle').checked;
+    // Browsers block sound until the page is interacted with. This tap is
+    // that interaction, so take it — otherwise the first request would ring
+    // to nobody.
+    if (on) LTPush.unlock();
     $('liveToggle').disabled = true;
     LT.api('PATCH', '/api/guides/me', { live: on })
       .then(function(res){
@@ -712,8 +725,10 @@ LT.start('studio').then(function(user){
 
         if (fresh.length){
           markSeen(fresh.map(function(b){ return b.id; }));
-          // Ring, don't chirp. A guide is carrying the phone, not watching it.
-          if (alertsOn()) LTPush.startRinging();
+          // Showing as walking means you are waiting for exactly this, so it
+          // always rings — no separate toggle to forget. Off the map, the
+          // bell decides.
+          if (alertsOn() || res.live) LTPush.startRinging();
           notify(fresh[0]);
           reload();   // refresh the list and counters underneath
         }
@@ -752,6 +767,13 @@ LT.start('studio').then(function(user){
       startPolling();
     }
   });
+
+  // Any tap counts as the gesture browsers demand before playing audio.
+  // Cheaper than nagging, and it means the first ring is never silent.
+  document.addEventListener('click', function once(){
+    LTPush.unlock();
+    document.removeEventListener('click', once);
+  }, { once: true });
 
   // Keep the worker's copy of the token current after a re-login.
   LTPush.syncToken();

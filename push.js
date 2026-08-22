@@ -210,6 +210,28 @@ window.LTPush = (function () {
     } catch (e) { /* audio blocked until a gesture */ }
   }
 
+  /**
+   * Wake the audio context from inside a user gesture.
+   *
+   * Browsers refuse to play sound until the page has been interacted with.
+   * Going live is a tap, so that is the moment to unlock — otherwise the
+   * first request of the day would ring silently.
+   */
+  function unlock(){
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return false;
+      ringCtx = ringCtx || new Ctx();
+      if (ringCtx.state === 'suspended') ringCtx.resume();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /** Did the browser actually give us usable audio? */
+  function audioReady(){
+    return !!ringCtx && ringCtx.state === 'running';
+  }
+
   function startRinging(opts){
     opts = opts || {};
     stopRinging();
@@ -249,6 +271,8 @@ window.LTPush = (function () {
     status: status,
     test: test,
     syncToken: syncToken,
+    unlock: unlock,
+    audioReady: audioReady,
     startRinging: startRinging,
     stopRinging: stopRinging,
     ringOnce: ringOnce
