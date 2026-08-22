@@ -31,6 +31,15 @@
   .in:focus{outline:none;border-color:var(--saffron);}
   .btn{width:100%;padding:17px;border-radius:13px;font-weight:700;font-size:16px;margin-top:18px;background:var(--saffron);color:var(--ink);}
   .btn:disabled{background:var(--ink-3);color:var(--faint);cursor:not-allowed;}
+  .whoBox{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;
+    background:var(--ink-2);border:1px solid var(--line);}
+  .whoAv{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+    font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:18px;color:#12181B;
+    background:linear-gradient(140deg,#8FE3AC,#1E7A54);}
+  .whoT{min-width:0;}
+  .whoT b{display:block;font-size:15px;font-weight:650;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;}
+  .whoT span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
   .hint{font-size:12px;color:var(--faint);line-height:1.6;margin-top:14px;text-align:center;}
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
@@ -99,10 +108,15 @@
   <h1>You're about to walk <em>Bangkok</em></h1>
   <p class="lede">Someone is there right now with a camera. You'll see what they see, and you can tell them where to go — turn left, get closer, what's that.</p>
 
-  <label>Your name</label>
-  <input class="in" id="fName" placeholder="Type your name" autocomplete="off">
+  <div class="whoBox" id="whoBox">
+    <div class="whoAv" id="whoAv">?</div>
+    <div class="whoT">
+      <b id="whoName">Checking your account…</b>
+      <span id="whoHandle"></span>
+    </div>
+  </div>
 
-  <button class="btn" id="btnJoin">Join the walk</button>
+  <button class="btn" id="btnJoin" disabled>Join the walk</button>
 
   <p class="hint">Your camera stays off. They'll hear you if you talk — allow microphone access when asked.</p>
   <div class="err" id="errBox"></div>
@@ -160,6 +174,7 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 const LK=window.LivekitClient;
 let room=null, secs=0, timerInt=null, micOn=true;
@@ -169,32 +184,62 @@ const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(
 
 const qs=new URLSearchParams(location.search);
 const ROOM=qs.get('room')||'';
-const API=qs.get('api')||'/api/token';
+const API=qs.get('api')||((window.LONGTAIL_API||'').replace(/\/+$/,'')+'/api/token')||'/api/token';
 
 if(!ROOM){ showErr('This link is missing its walk code. Ask your guide to send the link again.'); $('btnJoin').disabled=true; }
 
 function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
 function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
 
-$('fName').addEventListener('keydown',e=>{ if(e.key==='Enter') join(); });
+/* ---- who is watching ----
+   The account already knows this, and the server uses the account's display
+   name for the LiveKit identity regardless of what a client sends. Asking
+   again was pointless friction, and anything typed here was discarded. */
+const API_ROOT=(window.LONGTAIL_API||'').replace(/\/+$/,'');
+let ME=null;
+
+function toLogin(){
+  const back=encodeURIComponent(location.pathname.split('/').pop()+location.search);
+  location.replace('login.html?next='+back);
+}
+
+function authToken(){ try{ return localStorage.getItem('lt_token')||''; }catch{ return ''; } }
+
+async function whoAmI(){
+  const tok=authToken();
+  if(!tok || !API_ROOT) return toLogin();
+  try{
+    const res=await fetch(API_ROOT+'/api/auth/me',{headers:{Authorization:'Bearer '+tok}});
+    if(res.status===401){ try{ localStorage.removeItem('lt_token'); }catch{} return toLogin(); }
+    if(!res.ok) throw new Error('Could not check your account.');
+    const data=await res.json();
+    ME=data.user;
+    $('whoName').textContent=ME.display_name;
+    $('whoHandle').textContent='@'+ME.username;
+    $('whoAv').textContent=(ME.display_name||'?').slice(0,1).toUpperCase();
+    if(ROOM) $('btnJoin').disabled=false;
+  }catch(e){
+    $('whoName').textContent='Could not reach the server';
+    $('whoHandle').textContent='';
+    showErr('Cannot reach the walk server at '+(API_ROOT||'(not configured)')+'. Try again shortly.');
+  }
+}
+whoAmI();
+
 $('btnJoin').addEventListener('click',join);
 
 async function join(){
-  const name=$('fName').value.trim();
-  if(!name) return showErr('Put your name in first.');
+  if(!ME) return;
   $('errBox').classList.remove('on');
   $('btnJoin').disabled=true; $('btnJoin').textContent='Connecting…';
 
   try{
-    // Everyone needs an account now. The Worker uses the account's display
-    // name for the identity, so what's typed here is only a fallback for the
-    // older token endpoint.
     const headers={'Content-Type':'application/json'};
-    let authTok=''; try{ authTok=localStorage.getItem('lt_token')||''; }catch{}
+    const authTok=authToken();
     if(authTok) headers['Authorization']='Bearer '+authTok;
 
     const res=await fetch(API,{method:'POST',headers,
-      body:JSON.stringify({room:ROOM,name,role:'traveler'})});
+      body:JSON.stringify({room:ROOM,name:ME.display_name,role:'traveler'})});
     const ctype=res.headers.get('content-type')||'';
     if(!ctype.includes('application/json')) throw new Error('The walk server is not responding properly. Ask your guide to check their setup.');
     const data=await res.json();
