@@ -92,6 +92,37 @@
   .livebar .t b{display:block;font-size:15px;}
   .livebar .t span{font-size:12.5px;color:var(--dim);}
 
+  /* ---------- incoming request alert ---------- */
+  .alertbar{
+    position:sticky;top:calc(var(--nav-h) + 6px);z-index:40;margin-bottom:18px;
+    border-radius:var(--r-lg);padding:16px 18px;display:none;
+    background:rgba(87,211,146,.13);border:1px solid rgba(87,211,146,.5);
+    box-shadow:0 14px 40px -16px var(--glow);
+    align-items:center;gap:14px;flex-wrap:wrap;
+    animation:alert-in .5s var(--ease-out);
+  }
+  .alertbar.on{display:flex;}
+  @keyframes alert-in{from{opacity:0;transform:translateY(-14px);}to{opacity:1;transform:none;}}
+  .alertbar .ring{
+    width:44px;height:44px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+    background:rgba(87,211,146,.2);font-size:21px;
+    animation:ring-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes ring-pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(87,211,146,.5);}
+    60%{box-shadow:0 0 0 13px rgba(87,211,146,0);}
+  }
+  .alertbar .t{flex:1;min-width:190px;}
+  .alertbar .t b{display:block;font-size:16px;font-weight:700;}
+  .alertbar .t span{font-size:13px;color:var(--dim);}
+  .alertbar .acts{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .bellrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px 15px;border-radius:var(--r-md);background:rgba(255,255,255,.04);
+    border:1px solid var(--line);margin-bottom:18px;font-size:13px;color:var(--dim);}
+  .bellrow .t{flex:1;min-width:180px;}
+  .bellrow.armed{background:rgba(87,211,146,.07);border-color:rgba(87,211,146,.3);}
+
   .codebox{display:flex;gap:8px;align-items:center;}
   .codebox input{flex:1;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;}
 </style>
@@ -114,6 +145,28 @@
         <div class="hint" id="xpText" style="margin-top:6px">0 XP</div>
       </div>
     </section>
+
+    <!-- incoming walk request -->
+    <div class="alertbar" id="alertBar" role="status" aria-live="assertive">
+      <span class="ring">🔔</span>
+      <span class="t">
+        <b id="alertTitle">Someone wants a walk</b>
+        <span id="alertSub">—</span>
+      </span>
+      <span class="acts">
+        <button class="btn btn-primary btn-sm" id="alertAccept" type="button">Accept</button>
+        <button class="btn btn-glass btn-sm" id="alertDecline" type="button">Decline</button>
+        <button class="btn btn-ghost btn-sm" id="alertDismiss" type="button">Later</button>
+      </span>
+    </div>
+
+    <div class="bellrow" id="bellRow">
+      <span class="t" id="bellText">
+        Alerts are off. Turn them on and this page will chime and show a
+        notification when a traveller asks for a walk.
+      </span>
+      <button class="btn btn-glass btn-sm" id="bellBtn" type="button">Turn on alerts</button>
+    </div>
 
     <div id="liveBarWrap"></div>
 
@@ -399,6 +452,257 @@ LT.start('studio').then(function(user){
       LT.toast(err.message, 'bad');
     });
   }
+
+  /* =========================================================
+     Incoming walk requests
+
+     Studio polls while it is open and alerts on anything it has
+     not already told this guide about. Four channels, because a
+     guide is usually holding the phone and not looking at it:
+     a banner, a chime, a browser notification, and a vibration.
+
+     This only works while the page is open. Waking a closed
+     phone needs Web Push with a service worker and VAPID keys,
+     which is a bigger piece of work — noted in the README.
+     ========================================================= */
+
+  var POLL_MS = 15000;
+  var SEEN_KEY = 'lt_seen_requests';
+  var BELL_KEY = 'lt_alerts_on';
+  var pollTimer = null;
+  var queue = [];            // requests waiting to be acted on
+  var audioCtx = null;
+
+  function seen(){
+    try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function markSeen(ids){
+    try {
+      // Keep the list bounded; old ids can never come back.
+      var all = seen().concat(ids).slice(-200);
+      localStorage.setItem(SEEN_KEY, JSON.stringify(all));
+    } catch (e) { /* private mode */ }
+  }
+
+  function alertsOn(){
+    try { return localStorage.getItem(BELL_KEY) === '1'; } catch (e) { return false; }
+  }
+  function setAlertsOn(v){
+    try { localStorage.setItem(BELL_KEY, v ? '1' : '0'); } catch (e) {}
+  }
+
+  /* ---- the chime: two short notes, no audio file needed ---- */
+  function chime(){
+    if (!alertsOn()) return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      audioCtx = audioCtx || new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      [[880, 0], [1320, 0.14]].forEach(function(pair){
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = pair[0];
+        var t = audioCtx.currentTime + pair[1];
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.30);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.32);
+      });
+    } catch (e) { /* audio blocked; the banner still shows */ }
+  }
+
+  function buzz(){
+    if (!alertsOn()) return;
+    if (navigator.vibrate) { try { navigator.vibrate([120, 60, 120]); } catch (e) {} }
+  }
+
+  function notify(b){
+    if (!alertsOn()) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      var n = new Notification('Someone wants a walk', {
+        body: b.traveler_name + ' — ' + b.minutes + ' minutes, ' +
+              LT.baht(Math.round(b.hold_satang / 100)),
+        tag: b.id,                 // one notification per request, no stacking
+        requireInteraction: true   // stays until the guide deals with it
+      });
+      n.onclick = function(){ window.focus(); n.close(); };
+    } catch (e) { /* some browsers refuse constructor notifications */ }
+  }
+
+  /* ---- the banner ---- */
+  function showAlert(){
+    if (!queue.length){
+      $('alertBar').classList.remove('on');
+      return;
+    }
+    var b = queue[0];
+    $('alertTitle').textContent = queue.length > 1
+      ? queue.length + ' travellers want a walk'
+      : 'Someone wants a walk';
+    $('alertSub').textContent = b.traveler_name + ' — ' + b.minutes + ' minutes, ' +
+      LT.baht(Math.round(b.hold_satang / 100)) + ' held, not charged';
+    $('alertBar').classList.add('on');
+    document.title = '(' + queue.length + ') Studio — Longtail';
+  }
+
+  function dropFromQueue(id){
+    queue = queue.filter(function(x){ return x.id !== id; });
+    if (!queue.length) document.title = 'Studio — Longtail';
+    showAlert();
+  }
+
+  $('alertAccept').onclick = function(){
+    if (!queue.length) return;
+    var b = queue[0];
+    $('alertAccept').disabled = true;
+    LT.api('PATCH', '/api/bookings/' + b.id, { status: 'accepted' })
+      .then(function(){
+        LT.toast('Accepted — ' + b.traveler_name + ' has been told.', 'good');
+        dropFromQueue(b.id);
+        return reload();
+      })
+      .catch(function(err){ LT.toast(err.message, 'bad'); })
+      .then(function(){ $('alertAccept').disabled = false; });
+  };
+
+  $('alertDecline').onclick = function(){
+    if (!queue.length) return;
+    var b = queue[0];
+    $('alertDecline').disabled = true;
+    LT.api('PATCH', '/api/bookings/' + b.id, { status: 'declined' })
+      .then(function(){
+        // Declining is a right, not a failure. Say nothing about why.
+        LT.toast('Declined. You never owe anyone a reason.');
+        dropFromQueue(b.id);
+        return reload();
+      })
+      .catch(function(err){ LT.toast(err.message, 'bad'); })
+      .then(function(){ $('alertDecline').disabled = false; });
+  };
+
+  // "Later" hides a request for this page view only. The booking is untouched
+  // and still sits in the list below with its Accept and Decline buttons.
+  var laterIds = [];
+  function dismissed(id){ return laterIds.indexOf(id) !== -1; }
+
+  $('alertDismiss').onclick = function(){
+    if (!queue.length) return;
+    laterIds.push(queue[0].id);
+    dropFromQueue(queue[0].id);
+  };
+
+  /* ---- turning alerts on ----
+     Browsers only grant notification permission from a real click, which is
+     why this is a button rather than something we ask for on load. */
+  function paintBell(){
+    var on = alertsOn();
+    var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+    $('bellRow').classList.toggle('armed', on);
+    $('bellBtn').textContent = on ? 'Turn off alerts' : 'Turn on alerts';
+
+    if (!on){
+      $('bellText').textContent =
+        'Alerts are off. Turn them on and this page will chime when a traveller asks for a walk.';
+    } else if (perm === 'granted'){
+      $('bellText').textContent =
+        'Alerts are on. You will get a chime and a desktop notification while this page is open.';
+    } else if (perm === 'denied'){
+      $('bellText').textContent =
+        'Alerts are on, but your browser is blocking notifications for this site. ' +
+        'You will still get a chime and the banner. Allow notifications in your browser settings for the rest.';
+    } else {
+      $('bellText').textContent =
+        'Alerts are on. Allow notifications when your browser asks, so they reach you with the tab in the background.';
+    }
+  }
+
+  $('bellBtn').onclick = function(){
+    if (alertsOn()){
+      setAlertsOn(false);
+      paintBell();
+      LT.toast('Alerts off.');
+      return;
+    }
+    setAlertsOn(true);
+    // Unlock audio inside the click, or the chime is blocked later.
+    chime();
+    if ('Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission().then(function(){ paintBell(); });
+    }
+    paintBell();
+    LT.toast('Alerts on.', 'good');
+  };
+
+  /* ---- polling ---- */
+  function poll(){
+    return LT.api('GET', '/api/guides/me/alerts')
+      .then(function(res){
+        var known = seen();
+        var pending = (res.bookings || []).filter(function(b){ return b.status === 'requested'; });
+        var fresh = pending.filter(function(b){ return known.indexOf(b.id) === -1; });
+
+        // The banner tracks everything still unanswered, so a reload does not
+        // hide a request the guide has not dealt with. Only genuinely new ones
+        // chime — being nagged by your own tools is how people stop looking.
+        pending.forEach(function(b){
+          if (!queue.some(function(x){ return x.id === b.id; }) && !dismissed(b.id)) queue.push(b);
+        });
+        // Drop anything that has since been answered elsewhere.
+        queue = queue.filter(function(q){
+          return pending.some(function(b){ return b.id === q.id; });
+        });
+        showAlert();
+
+        if (fresh.length){
+          markSeen(fresh.map(function(b){ return b.id; }));
+          chime();
+          buzz();
+          notify(fresh[0]);
+          reload();   // refresh the list and counters underneath
+        }
+
+        setNavBadge(res.pending);
+        return res;
+      })
+      .catch(function(){ /* transient: the next tick tries again */ });
+  }
+
+  function setNavBadge(n){
+    var link = document.querySelector('.navlink.studio');
+    if (!link) return;
+    var badge = link.querySelector('.badge-n');
+    if (!badge){
+      badge = document.createElement('span');
+      badge.className = 'badge-n';
+      link.appendChild(badge);
+    }
+    badge.textContent = n > 9 ? '9+' : String(n);
+    badge.classList.toggle('on', n > 0);
+  }
+
+  function startPolling(){
+    if (pollTimer) clearInterval(pollTimer);
+    poll();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+
+  // Don't hammer the API in a background tab; catch up on return.
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    } else {
+      startPolling();
+    }
+  });
+
+  paintBell();
+  startPolling();
+
 
   reload();
 }).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
