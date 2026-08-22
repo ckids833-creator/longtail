@@ -166,6 +166,7 @@
         Alerts are off. Turn them on and this page will chime and show a
         notification when a traveller asks for a walk.
       </span>
+      <button class="btn btn-glass btn-sm" id="bellTest" type="button" style="display:none">Send a test</button>
       <button class="btn btn-glass btn-sm" id="bellBtn" type="button">Turn on alerts</button>
     </div>
 
@@ -242,6 +243,7 @@
 
 <script src="config.js"></script>
 <script src="data.js"></script>
+<script src="push.js"></script>
 <script>
 LT.start('studio').then(function(user){
   'use strict';
@@ -566,6 +568,7 @@ LT.start('studio').then(function(user){
   }
 
   $('alertAccept').onclick = function(){
+    LTPush.stopRinging();
     if (!queue.length) return;
     var b = queue[0];
     $('alertAccept').disabled = true;
@@ -580,6 +583,7 @@ LT.start('studio').then(function(user){
   };
 
   $('alertDecline').onclick = function(){
+    LTPush.stopRinging();
     if (!queue.length) return;
     var b = queue[0];
     $('alertDecline').disabled = true;
@@ -600,6 +604,7 @@ LT.start('studio').then(function(user){
   function dismissed(id){ return laterIds.indexOf(id) !== -1; }
 
   $('alertDismiss').onclick = function(){
+    LTPush.stopRinging();
     if (!queue.length) return;
     laterIds.push(queue[0].id);
     dropFromQueue(queue[0].id);
@@ -610,42 +615,80 @@ LT.start('studio').then(function(user){
      why this is a button rather than something we ask for on load. */
   function paintBell(){
     var on = alertsOn();
-    var perm = ('Notification' in window) ? Notification.permission : 'unsupported';
     $('bellRow').classList.toggle('armed', on);
     $('bellBtn').textContent = on ? 'Turn off alerts' : 'Turn on alerts';
+    if ($('bellTest')) $('bellTest').style.display = on ? '' : 'none';
 
-    if (!on){
-      $('bellText').textContent =
-        'Alerts are off. Turn them on and this page will chime when a traveller asks for a walk.';
-    } else if (perm === 'granted'){
-      $('bellText').textContent =
-        'Alerts are on. You will get a chime and a desktop notification while this page is open.';
-    } else if (perm === 'denied'){
-      $('bellText').textContent =
-        'Alerts are on, but your browser is blocking notifications for this site. ' +
-        'You will still get a chime and the banner. Allow notifications in your browser settings for the rest.';
-    } else {
-      $('bellText').textContent =
-        'Alerts are on. Allow notifications when your browser asks, so they reach you with the tab in the background.';
-    }
+    LTPush.status().then(function(st){
+      if (!on){
+        $('bellText').textContent =
+          'Alerts are off. Turn them on and Longtail will ring when a traveller asks for a walk.';
+        return;
+      }
+      if (!st.supported){
+        $('bellText').textContent =
+          'Alerts are on. This browser cannot do background notifications, so you will be told ' +
+          'while Longtail is open but not once it is closed.';
+      } else if (st.iosNeedsInstall){
+        $('bellText').innerHTML =
+          'Alerts are on, but on iPhone you must add Longtail to your Home Screen for ' +
+          'notifications to arrive with the app closed. Share → Add to Home Screen, ' +
+          'then open it from there and turn alerts on again.';
+      } else if (st.permission === 'denied'){
+        $('bellText').textContent =
+          'Alerts are on, but your browser is blocking notifications for this site. You will still ' +
+          'hear it while Longtail is open. Allow notifications in your browser settings for the rest.';
+      } else if (st.subscribed){
+        $('bellText').textContent =
+          'Alerts are on. Longtail will ring while it is open, and notify this device even when it is closed.';
+      } else {
+        $('bellText').textContent =
+          'Alerts are on for this page. Background notifications are not registered — press ' +
+          'Turn off alerts, then Turn on alerts, and allow notifications when asked.';
+      }
+    });
   }
 
   $('bellBtn').onclick = function(){
     if (alertsOn()){
       setAlertsOn(false);
+      LTPush.stopRinging();
+      LTPush.disable();
       paintBell();
       LT.toast('Alerts off.');
       return;
     }
+
     setAlertsOn(true);
-    // Unlock audio inside the click, or the chime is blocked later.
-    chime();
-    if ('Notification' in window && Notification.permission === 'default'){
-      Notification.requestPermission().then(function(){ paintBell(); });
-    }
-    paintBell();
-    LT.toast('Alerts on.', 'good');
+    // Unlock audio inside the click, or every later ring is blocked.
+    LTPush.ringOnce();
+    $('bellBtn').disabled = true;
+    $('bellBtn').textContent = 'Setting up…';
+
+    // This is what reaches a phone with the app closed.
+    LTPush.enable().then(function(res){
+      $('bellBtn').disabled = false;
+      paintBell();
+      if (res && res.ok){
+        LT.toast('Alerts on. You’ll be told even with Longtail closed.', 'good');
+      } else {
+        LT.toast(res && res.reason ? res.reason : 'Background alerts unavailable.', 'bad');
+      }
+    });
   };
+
+  if ($('bellTest')){
+    $('bellTest').onclick = function(){
+      $('bellTest').disabled = true;
+      LTPush.test().then(function(res){
+        LT.toast(res.sent > 0
+          ? 'Sent to ' + res.sent + ' device(s) — look for the notification.'
+          : 'No devices registered yet. Turn alerts on first.', res.sent > 0 ? 'good' : 'bad');
+      }).catch(function(err){
+        LT.toast(err.message, 'bad');
+      }).then(function(){ $('bellTest').disabled = false; });
+    };
+  }
 
   /* ---- polling ---- */
   function poll(){
@@ -669,11 +712,12 @@ LT.start('studio').then(function(user){
 
         if (fresh.length){
           markSeen(fresh.map(function(b){ return b.id; }));
-          chime();
-          buzz();
+          // Ring, don't chirp. A guide is carrying the phone, not watching it.
+          if (alertsOn()) LTPush.startRinging();
           notify(fresh[0]);
           reload();   // refresh the list and counters underneath
         }
+        if (!queue.length) LTPush.stopRinging();
 
         setNavBadge(res.pending);
         return res;
@@ -709,6 +753,8 @@ LT.start('studio').then(function(user){
     }
   });
 
+  // Keep the worker's copy of the token current after a re-login.
+  LTPush.syncToken();
   paintBell();
   startPolling();
 
