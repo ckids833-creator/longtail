@@ -38,5 +38,11 @@ window.LONGTAIL_ALLOW_DEMO_FALLBACK = IS_LOCAL;
      explore.html?api=https://longtail-backend.example.workers.dev */
 (function () {
   var override = new URLSearchParams(location.search).get('api');
-  if (override) window.LONGTAIL_API = override.replace(/\/+$/, '');
+  if (!override) return;
+  // Accept either an API base or a full endpoint URL. Links generated before
+  // this fix carried ".../api/token"; treating that as the base produced
+  // requests like ".../api/token/api/auth/me". Keep only the origin.
+  window.LONGTAIL_API = override
+    .replace(/\/+$/, '')
+    .replace(/\/api(\/.*)?$/, '');
 })();

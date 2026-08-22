@@ -541,15 +541,15 @@ var LT = (function () {
   function validCode(c){ return CODE_RE.test(String(c||'').trim()); }
 
   /**
-   * watch.html already accepts ?api= to override its token endpoint, so we
-   * hand it the Worker rather than editing that file. Without this the
-   * traveller would fall back to the old Vercel /api/token.
+   * watch.html loads config.js and works out the backend the same way every
+   * other page does, so the link needs nothing but the walk code.
+   *
+   * This used to append &api=<base>/api/token. That collided with config.js,
+   * which reads ?api= as the API *base* — the page ended up treating
+   * ".../api/token" as its root and asking for ".../api/token/api/auth/me".
    */
   function watchUrl(code){
-    var url = 'watch.html?room=' + encodeURIComponent(String(code).trim());
-    var base = apiBase();
-    if (base) url += '&api=' + encodeURIComponent(base + '/api/token');
-    return url;
+    return 'watch.html?room=' + encodeURIComponent(String(code).trim());
   }
 
   /* search across both lists */
