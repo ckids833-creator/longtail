@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<meta name="robots" content="noindex">
+<title>My walks — Longtail</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{padding-bottom:var(--demo-h,0px);}
+  .page{max-width:920px;}
+
+  .trip{
+    border-radius:var(--r-lg);padding:18px;margin-bottom:14px;
+    background:var(--glass);border:1px solid var(--glass-line);
+    display:flex;gap:15px;align-items:flex-start;flex-wrap:wrap;
+  }
+  .trip.ready{background:rgba(87,211,146,.10);border-color:rgba(87,211,146,.45);
+    box-shadow:0 12px 36px -18px var(--glow);}
+  .trip .t{flex:1;min-width:200px;}
+  .trip h3{font-size:17px;font-weight:650;display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .trip .where{font-size:12.5px;color:var(--dim);margin-top:5px;}
+  .trip .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);margin-top:9px;}
+  .trip .acts{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:190px;}
+  .trip .price{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--green-soft);
+    text-align:right;margin-bottom:2px;}
+
+  .state{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .state.waiting{background:rgba(232,163,61,.15);color:var(--saffron);border:1px solid rgba(232,163,61,.35);}
+  .state.ready  {background:rgba(87,211,146,.16);color:var(--green-soft);border:1px solid rgba(87,211,146,.4);}
+  .state.dead   {background:rgba(255,255,255,.06);color:var(--faint);border:1px solid var(--line);}
+  .state.done   {background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--line);}
+
+  .empty{padding:60px 20px;text-align:center;color:var(--faint);font-size:14px;
+    border-radius:var(--r-lg);background:var(--glass);border:1px solid var(--glass-line);}
+  .empty a{color:var(--green-soft);text-decoration:underline;}
+
+  .explain{border-radius:var(--r-md);padding:14px 16px;margin-bottom:24px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);
+    font-size:13px;color:var(--dim);line-height:1.65;}
+  .explain b{color:var(--paper);}
+
+  .sec{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:17px;margin:26px 0 12px;}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="page-head reveal in">
+    <h1>Walks you<br><em>asked for</em></h1>
+    <p class="lede">
+      Every walk you've requested, and whether the guide has said yes yet.
+      When one is accepted, the button to join it appears here.
+    </p>
+  </header>
+
+  <div class="explain" id="explain">
+    <b>This page is you as a traveller.</b> Requests you send live here.
+    Requests other people send <em>to you</em> live in Studio.
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+LT.start('trips').then(function(user){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+
+  if (!LT.auth.isGuide()) $('explain').style.display = 'none';
+
+  var STATE = {
+    requested: { cls:'waiting', label:'waiting on the guide' },
+    accepted:  { cls:'ready',   label:'accepted' },
+    live:      { cls:'ready',   label:'walking now' },
+    declined:  { cls:'dead',    label:'declined' },
+    cancelled: { cls:'dead',    label:'cancelled' },
+    done:      { cls:'done',    label:'finished' }
+  };
+
+  function tripCard(t){
+    var st = STATE[t.status] || { cls:'dead', label: t.status };
+    var joinable = t.joinable;
+
+    var action;
+    if (joinable){
+      // The link that actually opens the live walk.
+      action = '<a class="btn btn-primary" href="' + LT.watchUrl(t.room_code) + '">' +
+               (t.status === 'live' ? 'Join — walking now →' : 'Open the live walk →') + '</a>';
+    } else if (t.status === 'requested'){
+      action = '<button class="btn btn-glass" disabled>Waiting for ' +
+               LT.esc(t.guide_name.split(' ')[0]) + '</button>';
+    } else {
+      action = '<a class="btn btn-glass" href="guides.html">Find another walk</a>';
+    }
+
+    return '<div class="trip' + (joinable ? ' ready' : '') + '">' +
+      '<span class="avatar lg" style="' + LT.avatarStyle(t.guide_hue || 150) + '">' +
+        LT.esc((t.guide_name || '?').slice(0,1).toUpperCase()) + '</span>' +
+      '<span class="t">' +
+        '<h3>' + LT.esc(t.guide_name) +
+          '<span class="state ' + st.cls + '">' + st.label + '</span>' +
+          (t.guide_live ? '<span class="live"><i></i>live</span>' : '') +
+        '</h3>' +
+        '<div class="where">' + LT.esc(t.guide_area) + ' · ' + LT.esc(t.guide_city || '') + '</div>' +
+        '<div class="meta">' + t.minutes + ' min · code ' + LT.esc(t.room_code) +
+          ' · asked ' + LT.esc((t.created_at || '').slice(0,16)) + '</div>' +
+      '</span>' +
+      '<span class="acts">' +
+        '<span class="price">' + LT.baht(Math.round(t.hold_satang / 100)) + '</span>' +
+        action +
+      '</span>' +
+    '</div>';
+  }
+
+  function render(trips){
+    if (!trips.length){
+      $('list').innerHTML =
+        '<div class="empty">You haven’t asked for a walk yet.<br><br>' +
+        '<a href="explore.html">Find someone on the map</a> or ' +
+        '<a href="guides.html">browse the guides</a>.</div>';
+      return;
+    }
+
+    var open = trips.filter(function(t){ return t.status === 'requested' || t.joinable; });
+    var past = trips.filter(function(t){ return open.indexOf(t) === -1; });
+
+    var html = '';
+    if (open.length) html += '<div class="sec">Open</div>' + open.map(tripCard).join('');
+    if (past.length) html += '<div class="sec">Past</div>' + past.map(tripCard).join('');
+    $('list').innerHTML = html;
+  }
+
+  function load(){
+    return LT.api('GET', '/api/trips')
+      .then(function(res){ render(res.trips || []); })
+      .catch(function(err){
+        $('list').innerHTML = '<div class="empty">' + LT.esc(err.message) + '</div>';
+      });
+  }
+
+  load();
+  // A guide accepting happens on their machine, not yours — poll so the
+  // join button appears without the traveller having to guess and refresh.
+  setInterval(function(){ if (!document.hidden) load(); }, 20000);
+}).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
+</script>
+</body>
+</html>

@@ -68,8 +68,9 @@
   .bk .r{text-align:right;flex-shrink:0;}
   .bk .r .amt{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green-soft);}
   .bk .acts{display:flex;gap:6px;margin-top:7px;}
-  .bk .acts button{padding:6px 11px;border-radius:8px;font-size:11.5px;font-weight:600;
-    border:1px solid var(--glass-line);background:var(--glass);transition:all .2s;}
+  .bk .acts button,.bk .acts a{padding:6px 11px;border-radius:8px;font-size:11.5px;font-weight:600;
+    border:1px solid var(--glass-line);background:var(--glass);transition:all .2s;
+    display:inline-block;cursor:pointer;}
   .bk .acts .yes:hover{border-color:var(--green);color:var(--green-soft);}
   .bk .acts .no:hover{border-color:rgba(210,71,43,.6);color:#FF9B89;}
 
@@ -382,7 +383,9 @@ LT.start('studio').then(function(user){
 
     if (!list.length){
       $('bookings').innerHTML = '<div class="empty">No requests yet. ' +
-        'They show up here the moment someone asks for a walk.</div>';
+        'They show up here the moment someone asks <em>you</em> for a walk.' +
+        '<br><br>Walks <em>you</em> asked other guides for are under ' +
+        '<a href="trips.html" style="color:var(--green-soft);text-decoration:underline">My walks</a>.</div>';
       return;
     }
 
@@ -393,8 +396,14 @@ LT.start('studio').then(function(user){
             '<button class="no" data-dec="' + b.id + '" type="button">Decline</button>' +
           '</div>'
         : b.status === 'accepted'
-          ? '<div class="acts"><button class="yes" data-start="' + b.id + '" type="button">Start this walk</button></div>'
-          : '';
+          ? '<div class="acts">' +
+              '<button class="yes" data-start="' + b.id + '" type="button">Start this walk</button>' +
+              '<a class="yes" href="index.html?room=' + encodeURIComponent(b.room_code) + '">Open camera</a>' +
+            '</div>'
+          : b.status === 'live'
+            ? '<div class="acts"><a class="yes" href="index.html?room=' +
+              encodeURIComponent(b.room_code) + '">Back to the walk</a></div>'
+            : '';
       return '<div class="bk">' +
         '<span class="t"><b>' + LT.esc(b.traveler_name) + '</b>' +
           '<span>' + b.minutes + ' min · ' + (STATUS_LABEL[b.status] || b.status) + '</span>' +

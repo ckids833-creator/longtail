@@ -639,6 +639,7 @@ var LT = (function () {
           '<span class="xp">' + (u.xp || 0) + ' XP</span>' +
         '</div>' +
         (u.is_guide ? '<a class="acctmenu-item" href="studio.html">Studio</a>' : '') +
+        '<a class="acctmenu-item" href="trips.html">My walks</a>' +
         '<a class="acctmenu-item" href="guides.html">Guides</a>' +
         '<button class="acctmenu-item danger" id="signOutBtn" type="button">Sign out</button>' +
       '</div></div>';
