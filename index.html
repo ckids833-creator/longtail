@@ -50,6 +50,30 @@
   .checklist h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:14px;margin-bottom:9px;color:var(--saffron);}
   .checklist li{font-size:12.5px;color:var(--dim);line-height:1.6;margin-left:15px;margin-bottom:4px;}
 
+  /* ---- incoming walk requests, shown in the walk app itself ---- */
+  .reqBanner{display:none;align-items:center;gap:12px;margin-bottom:18px;padding:13px 15px;
+    border-radius:13px;background:rgba(70,209,137,.10);border:1px solid rgba(70,209,137,.45);
+    color:var(--paper);text-decoration:none;}
+  .reqBanner.on{display:flex;}
+  .reqBanner .bell{font-size:19px;animation:bellring 1.8s ease-in-out infinite;}
+  @keyframes bellring{0%,88%,100%{transform:rotate(0);}92%{transform:rotate(11deg);}96%{transform:rotate(-11deg);}}
+  .reqBanner .t{flex:1;min-width:0;}
+  .reqBanner .t b{display:block;font-size:14.5px;}
+  .reqBanner .t span{font-size:12px;color:var(--dim);}
+  .reqBanner .go{color:var(--signal);font-size:19px;}
+
+  /* While filming this must never cover the frame the traveller is watching. */
+  .reqPill{position:absolute;top:calc(64px + env(safe-area-inset-top));left:50%;
+    transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;
+    background:rgba(70,209,137,.92);color:#0B1410;border-radius:999px;
+    padding:9px 15px;font-size:13px;font-weight:700;text-decoration:none;
+    box-shadow:0 8px 26px -8px rgba(0,0,0,.9);animation:reqIn .4s ease-out;}
+  .reqPill.on{display:flex;}
+  @keyframes reqIn{from{opacity:0;transform:translate(-50%,-10px);}to{opacity:1;transform:translate(-50%,0);}}
+  .reqPill .dot{width:7px;height:7px;border-radius:50%;background:#0B1410;
+    animation:pd2 1.5s infinite;}
+  @keyframes pd2{0%{opacity:1;}50%{opacity:.25;}100%{opacity:1;}}
+
   #live{display:none;position:fixed;inset:0;background:#000;}
   #live.on{display:block;}
   #localVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;transform-origin:center center;transition:transform .16s ease-out;}
@@ -141,6 +165,13 @@
 
 <div id="lobby">
   <div class="brand"><div class="mark">L</div><span>LONGTAIL</span><span class="tagpill">GUIDE</span></div>
+
+  <a class="reqBanner" id="reqBanner" href="studio.html">
+    <span class="bell">🔔</span>
+    <span class="t"><b id="reqBannerTitle">1 walk request</b>
+      <span id="reqBannerSub">Tap to open Studio and answer it</span></span>
+    <span class="go">→</span>
+  </a>
   <h1>Start a walk</h1>
   <p class="lede">You carry the camera. Send the link to whoever's watching — they open it in a browser and tap Join.</p>
 
@@ -202,6 +233,12 @@
       <div class="pill">BATT<b class="mono" id="tBatt">—</b></div>
     </div>
   </div>
+
+  <!-- new walk requests, while filming -->
+  <a class="reqPill" id="reqPill" href="studio.html">
+    <span class="dot"></span>
+    <span id="reqPillText">1 walk request</span>
+  </a>
 
   <div class="toast" id="toast"></div>
 
@@ -274,6 +311,7 @@
   </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 const LK=window.LivekitClient;
 const RATE=15, FEE=0.12;
@@ -655,6 +693,138 @@ async function keepAwake(){ try{ if('wakeLock' in navigator) wakeLock=await navi
 function releaseAwake(){ if(wakeLock){ wakeLock.release(); wakeLock=null; } }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&room) keepAwake(); });
 window.addEventListener('beforeunload',e=>{ if(room&&secs>0){ e.preventDefault(); e.returnValue=''; } });
+
+/* =========================================================
+   Walk requests, inside the walk app
+
+   Studio polls for these too, but a guide who is actually
+   walking has left Studio for this page — which is exactly
+   when they were getting no warning at all. So the walk app
+   watches as well, in the lobby and while filming.
+
+   One rule while filming: no sound. The microphone is open
+   and live, so a chime here would be played straight into
+   the traveller's ear. Vibrate and show instead.
+   ========================================================= */
+const REQ_POLL_MS = 20000;
+const REQ_SEEN_KEY = 'lt_seen_requests';   // shared with Studio, so no double-alerting
+let reqTimer = null, reqAudio = null, reqCount = 0;
+
+function apiRoot(){
+  const cfg = (window.LONGTAIL_API || '').replace(/\/+$/, '');
+  if (cfg) return cfg;
+  // Fall back to whatever the token field points at, minus the endpoint path.
+  const from = ($('fApi') && $('fApi').value.trim()) || '';
+  return from.replace(/\/+$/, '').replace(/\/api(\/.*)?$/, '');
+}
+
+function reqSeen(){
+  try { return JSON.parse(localStorage.getItem(REQ_SEEN_KEY) || '[]'); }
+  catch { return []; }
+}
+function reqMarkSeen(ids){
+  try {
+    localStorage.setItem(REQ_SEEN_KEY, JSON.stringify(reqSeen().concat(ids).slice(-200)));
+  } catch {}
+}
+
+/** Filming? Then the mic is live and nothing may make a noise. */
+function isFilming(){
+  return !!room && $('live').classList.contains('on');
+}
+
+function reqChime(){
+  if (isFilming()) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    reqAudio = reqAudio || new Ctx();
+    if (reqAudio.state === 'suspended') reqAudio.resume();
+    [[880, 0], [1320, 0.14]].forEach(([hz, at]) => {
+      const osc = reqAudio.createOscillator(), gain = reqAudio.createGain();
+      osc.type = 'sine'; osc.frequency.value = hz;
+      const t = reqAudio.currentTime + at;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      osc.connect(gain); gain.connect(reqAudio.destination);
+      osc.start(t); osc.stop(t + 0.32);
+    });
+  } catch {}
+}
+
+function paintRequests(n){
+  reqCount = n;
+  const label = n + ' walk request' + (n === 1 ? '' : 's');
+
+  const banner = $('reqBanner');
+  if (banner){
+    banner.classList.toggle('on', n > 0);
+    if (n > 0){
+      $('reqBannerTitle').textContent = label;
+      $('reqBannerSub').textContent = 'Tap to open Studio and answer ' + (n === 1 ? 'it' : 'them');
+    }
+  }
+
+  const pill = $('reqPill');
+  if (pill){
+    pill.classList.toggle('on', n > 0);
+    if (n > 0) $('reqPillText').textContent = label + ' waiting';
+  }
+}
+
+async function pollRequests(){
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  if (!root || !tok) return;
+
+  try {
+    const res = await fetch(root + '/api/guides/me/alerts', {
+      headers: { Authorization: 'Bearer ' + tok }
+    });
+    // 401 means signed out, 403 means not a guide - either way, stop asking.
+    if (res.status === 401 || res.status === 403){
+      if (reqTimer) { clearInterval(reqTimer); reqTimer = null; }
+      return;
+    }
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const pending = (data.bookings || []).filter(b => b.status === 'requested');
+    const known = reqSeen();
+    const fresh = pending.filter(b => known.indexOf(b.id) === -1);
+
+    paintRequests(pending.length);
+
+    if (fresh.length){
+      reqMarkSeen(fresh.map(b => b.id));
+      reqChime();                                   // silent while filming
+      if (navigator.vibrate){ try { navigator.vibrate([120, 60, 120]); } catch {} }
+      const b = fresh[0];
+      toast('🔔 ' + b.traveler_name + ' wants ' + b.minutes + ' minutes' +
+            (isFilming() ? ' — tap the green pill' : ''), 6000);
+    }
+  } catch {
+    // offline or a dead spot; the next tick tries again
+  }
+}
+
+function startRequestWatch(){
+  if (reqTimer) clearInterval(reqTimer);
+  pollRequests();
+  reqTimer = setInterval(pollRequests, REQ_POLL_MS);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){
+    if (reqTimer){ clearInterval(reqTimer); reqTimer = null; }
+  } else {
+    startRequestWatch();
+  }
+});
+
+startRequestWatch();
+
 </script>
 </body>
 </html>
