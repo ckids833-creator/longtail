@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex">
 <title>Longtail — Guide</title>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -44,6 +45,24 @@
   .adv summary::-webkit-details-marker{display:none;}
   .adv summary::before{content:'▸ ';}
   .adv[open] summary::before{content:'▾ ';}
+  .locRow{display:flex;align-items:center;gap:11px;margin-top:16px;padding:13px 14px;
+    border-radius:12px;background:var(--ink-2);border:1px solid var(--line);}
+  .locRow.ok{background:rgba(70,209,137,.08);border-color:rgba(70,209,137,.4);}
+  .locRow.bad{background:rgba(210,71,43,.10);border-color:rgba(210,71,43,.4);}
+  .locRow > i{font-size:20px;color:var(--faint);}
+  .locRow.ok > i{color:var(--signal);}
+  .locRow.bad > i{color:var(--chili);}
+  .locRow .t{flex:1;min-width:0;}
+  .locRow .t b{display:block;font-size:13.5px;}
+  .locRow .t span{font-size:11.5px;color:var(--dim);line-height:1.45;}
+  .locRow button{display:flex;align-items:center;gap:6px;background:var(--ink-3);
+    border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-size:12.5px;
+    font-weight:600;flex-shrink:0;}
+  .locRow.ok button{display:none;}
+  .qualNote{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:7px;}
+  .qualNote.warn{color:var(--saffron);}
+  label i{font-size:12px;}
+
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
   .checklist{margin-top:20px;background:var(--ink-2);border:1px solid var(--line);border-radius:13px;padding:15px 17px;}
@@ -140,6 +159,26 @@
   .note.good b{color:var(--signal);}
   .ctrls{display:flex;gap:6px;}
   .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.2);border-radius:11px;padding:13px 0;font-size:12px;font-weight:600;text-align:center;position:relative;}
+  .ctrl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    line-height:1;}
+  .ctrl i{font-size:21px;line-height:1;}
+  .ctrl span{font-size:10.5px;font-weight:600;letter-spacing:.02em;}
+  .note i{display:block;font-size:15px;margin:1px 0 2px;}
+  .ctrl.paused{background:rgba(232,163,61,.9);color:var(--ink);border-color:transparent;}
+
+  /* A break, not an end: the traveller keeps their seat and is not billed. */
+  .frozen{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;text-align:center;padding:30px;
+    background:rgba(8,12,14,.93);backdrop-filter:blur(10px);}
+  .frozen.on{display:flex;}
+  .frozen i{font-size:44px;color:var(--saffron);}
+  .frozen h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
+    text-transform:uppercase;font-size:26px;}
+  .frozen p{font-size:13.5px;color:var(--dim);line-height:1.6;max-width:30ch;}
+  .frozen .clock{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--saffron);}
+  .frozen button{background:var(--signal);color:var(--ink);border-radius:12px;
+    padding:15px 26px;font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
+
   .ctrl.off{color:var(--chili);border-color:rgba(210,71,43,.5);}
   .ctrl.leave{background:var(--chili);color:var(--paper);border-color:transparent;}
   .badge{position:absolute;top:-5px;right:-3px;background:var(--signal);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px;}
@@ -177,6 +216,25 @@
 
   <label>Walk code</label>
   <input class="in" id="fRoom" placeholder="yaowarat-01" autocomplete="off" spellcheck="false">
+
+  <div class="locRow" id="locRow">
+    <i class="ti ti-map-pin-off" id="locIcon"></i>
+    <span class="t">
+      <b id="locTitle">Location needed</b>
+      <span id="locSub">Longtail shows travellers where you actually are.</span>
+    </span>
+    <button id="locBtn"><i class="ti ti-location"></i>Allow</button>
+  </div>
+
+  <label for="fQual"><i class="ti ti-adjustments"></i> Picture quality</label>
+  <select class="in" id="fQual">
+    <option value="540p" selected>540p — easiest on battery and data</option>
+    <option value="720p">720p — sharper, about 2x the data</option>
+    <option value="1080p">1080p — sharp, about 4x the data</option>
+    <option value="1440p">1440p — very sharp, heavy</option>
+    <option value="4k">4K — only on wifi, drains a phone fast</option>
+  </select>
+  <p class="qualNote" id="qualNote"></p>
 
   <div class="share" id="shareBox" style="display:none;">
     <h3>Send this to your traveler</h3>
@@ -247,18 +305,43 @@
     <div class="what" id="promptWhat"></div>
   </div>
 
+  <div class="frozen" id="frozenBox">
+    <i class="ti ti-player-pause"></i>
+    <h2>On a break</h2>
+    <p>Your camera and microphone are off. They can still see the chat, they
+       keep their place, and they are not being charged for this.</p>
+    <div class="clock" id="frozenClock">00:00</div>
+    <button id="cResume"><i class="ti ti-player-play"></i>Start walking again</button>
+  </div>
+
   <div class="bottom" id="bottomBar">
     <div class="noteRow">
-      <button class="note bad" data-ev="Stuttered"><b id="nStut">0</b>Stutter</button>
-      <button class="note bad" data-ev="Lost signal"><b id="nSig">0</b>Signal</button>
-      <button class="note bad" data-ev="Went quiet"><b id="nQuiet">0</b>Quiet</button>
-      <button class="note good" data-ev="Great moment"><b id="nGood">0</b>Great bit</button>
+      <button class="note bad" data-ev="Stuttered" aria-label="Log: stuttered">
+        <b id="nStut">0</b><i class="ti ti-player-record"></i>Stutter</button>
+      <button class="note bad" data-ev="Lost signal" aria-label="Log: lost signal">
+        <b id="nSig">0</b><i class="ti ti-wifi-off"></i>Signal</button>
+      <button class="note bad" data-ev="Went quiet" aria-label="Log: went quiet">
+        <b id="nQuiet">0</b><i class="ti ti-microphone-off"></i>Quiet</button>
+      <button class="note good" data-ev="Great moment" aria-label="Log: great moment">
+        <b id="nGood">0</b><i class="ti ti-check"></i>Great bit</button>
     </div>
     <div class="ctrls">
-      <button class="ctrl" id="cMic">Mute</button>
-      <button class="ctrl" id="cFlip">Flip</button>
-      <button class="ctrl" id="cChat">Chat<span class="badge" id="chatBadge">0</span></button>
-      <button class="ctrl leave" id="cLeave">End</button>
+      <button class="ctrl" id="cMic" aria-label="Mute microphone">
+        <i class="ti ti-microphone" id="cMicIcon"></i><span id="cMicLabel">Mute</span>
+      </button>
+      <button class="ctrl" id="cFreeze" aria-label="Take a break">
+        <i class="ti ti-player-pause" id="cFreezeIcon"></i><span id="cFreezeLabel">Break</span>
+      </button>
+      <button class="ctrl" id="cFlip" aria-label="Switch camera">
+        <i class="ti ti-camera-rotate"></i><span>Flip</span>
+      </button>
+      <button class="ctrl" id="cChat" aria-label="Chat">
+        <i class="ti ti-message-circle"></i><span>Chat</span>
+        <span class="badge" id="chatBadge">0</span>
+      </button>
+      <button class="ctrl leave" id="cLeave" aria-label="End the walk">
+        <i class="ti ti-player-stop"></i><span>End</span>
+      </button>
     </div>
   </div>
 
@@ -363,15 +446,247 @@ $('btnShare').addEventListener('click',async()=>{
 function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
 function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
 
+
+/* =========================================================
+   Location, quality, and taking a break
+   ========================================================= */
+
+/* ---- picture quality ----
+   Bitrate has to rise with resolution. 4K at 540p's bitrate looks worse than
+   540p does, because the same bits are spread over sixteen times the pixels.
+   These are the honest costs, which is why the note under the picker says so:
+   the brief caps at 540p/1.2Mbps for battery and Thai mobile data, and every
+   step above it spends more of both. */
+const QUALITY = {
+  '540p':  { w: 960,  h: 540,  bitrate: 1_200_000, mb: 9,   note: 'The default. About 9 MB a minute.' },
+  '720p':  { w: 1280, h: 720,  bitrate: 2_500_000, mb: 19,  note: 'About 19 MB a minute, and noticeably more battery.' },
+  '1080p': { w: 1920, h: 1080, bitrate: 4_500_000, mb: 34,  note: 'About 34 MB a minute. A 25 minute walk is close to a gigabyte.' },
+  '1440p': { w: 2560, h: 1440, bitrate: 8_000_000, mb: 60,  note: 'About 60 MB a minute. Expect heat and a flat battery.' },
+  '4k':    { w: 3840, h: 2160, bitrate: 14_000_000, mb: 105, note: 'About 105 MB a minute. Wifi only, and many phones cannot sustain it while walking.' }
+};
+
+function chosenQuality(){
+  const key = ($('fQual') && $('fQual').value) || '540p';
+  return QUALITY[key] ? key : '540p';
+}
+
+function paintQualityNote(){
+  const key = chosenQuality(), q = QUALITY[key], el = $('qualNote');
+  if (!el) return;
+  el.textContent = q.note + ' Roughly ' + Math.round(q.mb * 25) + ' MB for a 25 minute walk.';
+  el.classList.toggle('warn', key === '1440p' || key === '4k');
+}
+
+/* ---- location ----
+   No fix, no walk. Travellers pick a guide off a globe, so a guide who cannot
+   say where they are cannot be on it. */
+let lastFix = null, geoWatchId = null, geoPushTimer = null;
+
+function setLoc(state, title, sub){
+  const row = $('locRow');
+  if (!row) return;
+  row.classList.toggle('ok', state === 'ok');
+  row.classList.toggle('bad', state === 'bad');
+  $('locIcon').className = 'ti ' + (state === 'ok' ? 'ti-map-pin' : state === 'bad' ? 'ti-map-pin-off' : 'ti-map-pin-off');
+  $('locTitle').textContent = title;
+  $('locSub').textContent = sub;
+  refreshStartable();
+}
+
+function refreshStartable(){
+  const btn = $('btnStart');
+  if (!btn) return;
+  const code = ($('fRoom').value || '').trim();
+  btn.disabled = !lastFix || code.length < 3;
+}
+
+function askLocation(){
+  if (!navigator.geolocation){
+    setLoc('bad', 'This device has no location', 'Longtail needs it to put you on the map.');
+    return;
+  }
+  setLoc('', 'Finding you…', 'Allow location when your browser asks.');
+  navigator.geolocation.getCurrentPosition(
+    pos => { onFix(pos); },
+    err => {
+      const why = err.code === 1
+        ? 'You blocked location. Allow it for this site in your browser settings, then try again.'
+        : err.code === 3
+          ? 'Took too long to get a fix. Step outside or try again.'
+          : 'Could not get your location.';
+      setLoc('bad', 'Location unavailable', why);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+  );
+}
+
+function onFix(pos){
+  lastFix = {
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude,
+    accuracy: pos.coords.accuracy,
+    heading: Number.isFinite(pos.coords.heading) ? pos.coords.heading : null
+  };
+  const acc = Math.round(lastFix.accuracy || 0);
+  setLoc('ok', 'Location on',
+    'Accurate to about ' + acc + ' m. Travellers see this on the globe while you walk.');
+  sendFix();
+}
+
+async function sendFix(){
+  if (!lastFix) return;
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  if (!root || !tok) return;
+  try {
+    await fetch(root + '/api/guides/me/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify(lastFix)
+    });
+  } catch { /* a dead spot; the next one goes */ }
+}
+
+/* Keep reporting while walking, so the pin follows the guide down the street. */
+function startLocationStream(){
+  stopLocationStream();
+  if (!navigator.geolocation) return;
+  geoWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      lastFix = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        heading: Number.isFinite(pos.coords.heading) ? pos.coords.heading : null
+      };
+    },
+    () => { /* keep the last good fix rather than dropping the pin */ },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+  );
+  // Report on a timer rather than on every fix: watchPosition can fire many
+  // times a second and each one would be a request.
+  geoPushTimer = setInterval(sendFix, 15000);
+}
+
+function stopLocationStream(){
+  if (geoWatchId !== null && navigator.geolocation){
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+  }
+  if (geoPushTimer){ clearInterval(geoPushTimer); geoPushTimer = null; }
+}
+
+/* ---- the session ----
+   The walk app owns the session now. "Live" is not a switch a guide can leave
+   on; it means a walk is running, which is exactly this. */
+let sessionId = null;
+
+async function openSession(){
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  if (!root || !tok) return null;
+
+  const res = await fetch(root + '/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+    body: JSON.stringify({ quality: chosenQuality() })
+  });
+  const data = await res.json().catch(() => ({}));
+
+  if (res.ok) return data.session && data.session.id;
+
+  // Studio may already have started this walk from an accepted booking.
+  if (res.status === 409){
+    const st = await fetch(root + '/api/studio', { headers: { Authorization: 'Bearer ' + tok } })
+      .then(r => r.json()).catch(() => null);
+    return st && st.live_session ? st.live_session.id : null;
+  }
+  throw new Error(data.error || 'Could not start the walk.');
+}
+
+async function closeSession(){
+  if (!sessionId) return;
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  try {
+    await fetch(root + '/api/sessions/' + sessionId + '/end', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ ended_by: 'guide' })
+    });
+  } catch { /* the traveller still gets dropped; the row can be closed later */ }
+  sessionId = null;
+}
+
+/* ---- break ----
+   Camera and microphone off, the walk still open, and the clock not running.
+   Charging someone for the minutes you spent buying water is the kind of small
+   unfairness that loses a customer for good. */
+let paused = false, pausedSince = 0, pausedTick = null;
+
+async function setPaused(on){
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  if (sessionId && root && tok){
+    try {
+      await fetch(root + '/api/sessions/' + sessionId + (on ? '/pause' : '/resume'), {
+        method: 'POST', headers: { Authorization: 'Bearer ' + tok }
+      });
+    } catch { /* the local state still matters to the traveller */ }
+  }
+
+  paused = on;
+  try {
+    await room.localParticipant.setCameraEnabled(!on);
+    await room.localParticipant.setMicrophoneEnabled(on ? false : micOn);
+  } catch (e) { console.warn('pause toggle:', e.message); }
+
+  // Tell the traveller, so their screen explains itself instead of freezing.
+  try {
+    room.localParticipant.publishData(
+      enc.encode(JSON.stringify({ type: on ? 'paused' : 'resumed' })), { reliable: true }
+    );
+  } catch {}
+
+  $('frozenBox').classList.toggle('on', on);
+  $('cFreeze').classList.toggle('paused', on);
+  $('cFreezeIcon').className = 'ti ' + (on ? 'ti-player-play' : 'ti-player-pause');
+  $('cFreezeLabel').textContent = on ? 'Resume' : 'Break';
+
+  clearInterval(pausedTick);
+  if (on){
+    pausedSince = Date.now();
+    const tick = () => {
+      const secs = Math.floor((Date.now() - pausedSince) / 1000);
+      $('frozenClock').textContent = fmt(secs);
+    };
+    tick();
+    pausedTick = setInterval(tick, 1000);
+  }
+}
+
 $('btnStart').addEventListener('click',start);
+$('locBtn').addEventListener('click',askLocation);
+$('fQual').addEventListener('change',paintQualityNote);
+$('fRoom').addEventListener('input',refreshStartable);
+$('cFreeze').addEventListener('click',()=>setPaused(!paused));
+$('cResume').addEventListener('click',()=>setPaused(false));
+paintQualityNote();
+askLocation();          // ask straight away; a walk cannot start without it
+refreshStartable();
 
 async function start(){
   const roomCode=$('fRoom').value.trim();
   if(roomCode.length<3) return showErr('Give the walk a code — at least 3 characters.');
+  if(!lastFix) return showErr('Longtail needs your location before you can walk. Tap Allow above.');
   $('errBox').classList.remove('on');
   $('btnStart').disabled=true; $('btnStart').textContent='Connecting…';
 
   try{
+    // Report where we are, then open the walk. Opening it is what marks the
+    // guide live — there is no separate switch any more.
+    await sendFix();
+    sessionId = await openSession();
     // The Worker backend only hands out a guide token to a signed-in guide who
     // owns this walk code. guides.html puts that session token in lt_token.
     // The old Vercel endpoint ignores the header, so this is safe either way.
@@ -394,11 +709,16 @@ async function start(){
       throw new Error(data.error||'Token request failed');
     }
 
+    const q=QUALITY[chosenQuality()];
     room=new LK.Room({
       adaptiveStream:true, dynacast:true,
-      videoCaptureDefaults:{facingMode:'environment',resolution:LK.VideoPresets.h540.resolution},
+      videoCaptureDefaults:{
+        facingMode:'environment',
+        // Ask for the chosen size; the browser gives the nearest the camera has.
+        resolution:{width:q.w,height:q.h,frameRate:30}
+      },
       publishDefaults:{
-        videoEncoding:{maxBitrate:1_200_000,maxFramerate:30},
+        videoEncoding:{maxBitrate:q.bitrate,maxFramerate:30},
         simulcast:true,
         // Default simulcast is three layers, so the 1.2 Mbps budget gets split
         // and the top layer never gets the whole of it. One fallback layer is
@@ -414,6 +734,7 @@ async function start(){
 
     $('lobby').style.display='none';
     $('live').classList.add('on');
+    startLocationStream();
 
     await room.localParticipant.setCameraEnabled(true);
     await room.localParticipant.setMicrophoneEnabled(true);
@@ -655,13 +976,19 @@ document.querySelectorAll('.note').forEach(b=>b.addEventListener('click',()=>{
 $('cMic').addEventListener('click',async()=>{
   micOn=!micOn;
   await room.localParticipant.setMicrophoneEnabled(micOn);
-  $('cMic').textContent=micOn?'Mute':'Unmute';
+  $('cMicLabel').textContent=micOn?'Mute':'Unmute';
+  $('cMicIcon').className='ti '+(micOn?'ti-microphone':'ti-microphone-off');
   $('cMic').classList.toggle('off',!micOn);
 });
 $('cLeave').addEventListener('click',end);
 
 async function end(){
-  clearInterval(timerInt); releaseAwake();
+  clearInterval(timerInt); clearInterval(pausedTick); releaseAwake();
+  stopLocationStream();
+  // Close the walk before dropping the connection. Ending the session is what
+  // takes the guide off the map and stops the clock; disconnecting alone would
+  // leave them showing as live with nobody there.
+  await closeSession();
   if(room) await room.disconnect();
   const gross=Math.round(secs*(RATE/60));
   const bUsed=battStart!=null&&battPct()!=null?battStart-battPct():null;

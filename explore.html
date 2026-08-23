@@ -312,7 +312,10 @@ LT.start('explore').then(function(account){
 
   // The directory comes from the Worker. This resolves either way — a backend
   // that is down falls back to the sample rows bundled in data.js.
-  var dataReady = LT.load().then(function(state){
+  // The globe shows people who are walking right now, at the position their
+  // phone is reporting. A guide who is not streaming is not on it — a pin you
+  // cannot join is worse than no pin.
+  var dataReady = LT.load({ liveOnly: true }).then(function(state){
     LT.refreshDemoBar();
     $('liveCount').textContent = LT.liveGuides().length;
     if (!state.online) LT.toast('Live directory unavailable — showing sample guides.', 'bad');
@@ -415,7 +418,12 @@ LT.start('explore').then(function(account){
     setView('land');
   }
 
+  var markerById = {};
+
   function addMarkers(){
+    markers.forEach(function(m){ m.remove(); });
+    markers = [];
+    markerById = {};
     LT.GUIDES.forEach(function(g){
       var el = document.createElement('div');
       el.className = 'pin ' + (g.live ? 'live' : 'offline');
@@ -430,9 +438,34 @@ LT.start('explore').then(function(account){
       el.addEventListener('keydown', function(ev){
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(ev); }
       });
-      markers.push(new maplibregl.Marker({ element: el }).setLngLat([g.lng, g.lat]).addTo(map));
+      var marker = new maplibregl.Marker({ element: el }).setLngLat([g.lng, g.lat]).addTo(map);
+      markers.push(marker);
+      markerById[g.id] = marker;
     });
   }
+
+  /* Follow them down the street. The phone reports every 15s while walking, so
+     poll a little faster than that and slide the pin rather than redrawing it. */
+  function refreshLive(){
+    if (document.hidden) return;
+    LT.load({ liveOnly: true }).then(function(state){
+      if (!state.online) return;
+      $('liveCount').textContent = LT.liveGuides().length;
+      var seen = {};
+      LT.GUIDES.forEach(function(g){
+        seen[g.id] = true;
+        if (markerById[g.id]) markerById[g.id].setLngLat([g.lng, g.lat]);
+      });
+      // Someone who stopped walking leaves the globe immediately.
+      var vanished = Object.keys(markerById).filter(function(id){ return !seen[id]; });
+      if (vanished.length || LT.GUIDES.some(function(g){ return !markerById[g.id]; })) {
+        addMarkers();
+        if (drawerOpen()) renderDrawer();
+      }
+    });
+  }
+  function drawerOpen(){ return $('drawer').classList.contains('on'); }
+  setInterval(refreshLive, 12000);
 
   function flyToPoint(lng, lat, zoom){
     if (!map) return;

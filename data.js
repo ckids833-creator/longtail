@@ -370,6 +370,9 @@ var LT = (function () {
   /* rows from the API use satang and a demo flag; the pages want baht */
   function adaptGuide(g){
     return {
+      located_at: g.located_at || null,
+      accuracy_m: g.accuracy_m == null ? null : g.accuracy_m,
+      heading: g.heading == null ? null : g.heading,
       id: g.id, name: g.name, initial: g.initial, city: g.city, area: g.area,
       lat: g.lat, lng: g.lng, topic: g.topic, blurb: g.blurb,
       rate: (g.rate_satang || 0) / 100,
@@ -389,12 +392,13 @@ var LT = (function () {
    * Pull the directory. Resolves either way — a backend that is down
    * degrades to the bundled demo rows rather than an empty page.
    */
-  function load(){
+  function load(opts){
     if (!apiBase()){
       OFFLINE = true;
       return Promise.resolve({ online: false, reason: 'No API configured.' });
     }
-    return Promise.all([ api('GET', '/api/guides'), api('GET', '/api/places') ])
+    var guidesPath = opts && opts.liveOnly ? '/api/guides?live=1' : '/api/guides';
+    return Promise.all([ api('GET', guidesPath), api('GET', '/api/places') ])
       .then(function (res) {
         // Replace unconditionally. A successful response with zero guides is
         // a fact about the world - a new directory with nobody in it yet - and

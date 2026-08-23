@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="theme.css">
 <style>
   body{padding-bottom:var(--demo-h,0px);}
@@ -32,6 +33,16 @@
   .golive .t{flex:1;min-width:200px;}
   .golive .t b{display:block;font-size:15px;font-weight:650;}
   .golive .t span{font-size:12.5px;color:var(--dim);}
+
+  .statusDot{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:grid;
+    place-items:center;font-size:21px;background:rgba(255,255,255,.06);color:var(--faint);
+    border:1px solid var(--line);}
+  .golive.on .statusDot{background:rgba(87,211,146,.18);color:var(--green-soft);
+    border-color:rgba(87,211,146,.45);animation:livePulse 1.9s ease-in-out infinite;}
+  @keyframes livePulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(87,211,146,.45);}
+    65%{box-shadow:0 0 0 12px rgba(87,211,146,0);}
+  }
 
   .switch{position:relative;width:52px;height:30px;flex-shrink:0;cursor:pointer;}
   .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;}
@@ -173,16 +184,14 @@
     <div id="liveBarWrap"></div>
 
     <section class="golive glass" id="goliveBox">
-      <label class="switch">
-        <input type="checkbox" id="liveToggle">
-        <span class="track"></span><span class="knob"></span>
-      </label>
+      <span class="statusDot" id="statusDot"><i class="ti ti-broadcast"></i></span>
       <div class="t">
-        <b id="liveTitle">You’re off the map</b>
-        <span id="liveSub">Turn this on to show as walking now. Turn it off and you disappear —
-          you’re never obliged to accept anything.</span>
+        <b id="liveTitle">You’re not walking</b>
+        <span id="liveSub">You appear on the globe only while you’re actually streaming.
+          Open the walk app to start; close it and you’re off the map.</span>
       </div>
-      <a class="btn btn-primary" id="openApp" href="index.html">Open the walk app →</a>
+      <a class="btn btn-primary" id="openApp" href="index.html">
+        <i class="ti ti-player-play"></i> Open the walk app</a>
     </section>
 
     <div class="grid3">
@@ -290,11 +299,24 @@ LT.start('studio').then(function(user){
     paintRecent(d.recent_sessions);
   }
 
-  /* ------------------------------------------------------------ live toggle */
+  /* ------------------------------------------------------- live status ----
+     There is no switch any more. "Live" means a walk is running right now,
+     which the walk app sets when it opens a session and clears when it ends
+     one. A switch a guide could leave on put them on the globe when nobody
+     was there, and a traveller choosing them off the map got nothing. */
   function setLive(on){
-    $('liveToggle').checked = !!on;
     $('goliveBox').classList.toggle('on', !!on);
-    $('liveTitle').textContent = on ? 'You’re showing as walking now' : 'You’re off the map';
+    $('liveTitle').textContent = on ? 'You’re walking now — you’re on the globe'
+                                    : 'You’re not walking';
+    $('liveSub').textContent = on
+      ? 'Travellers can see where you are, and a walk request will ring on this page. '
+        + 'Ending the walk takes you off the map straight away.'
+      : 'You appear on the globe only while you’re actually streaming. '
+        + 'Open the walk app to start; close it and you’re off the map.';
+    $('openApp').innerHTML = on
+      ? '<i class="ti ti-player-play"></i> Back to the walk'
+      : '<i class="ti ti-player-play"></i> Open the walk app';
+
     // Arriving already-live means no gesture has happened yet, so sound is
     // still blocked. Say so rather than ringing silently at nobody.
     setTimeout(function(){
@@ -302,29 +324,7 @@ LT.start('studio').then(function(user){
         $('liveSub').textContent += ' Tap anywhere on this page once so your browser lets it make a sound.';
       }
     }, 0);
-    $('liveSub').textContent = on
-      ? 'Travellers can see you on the globe, and a walk request will ring on this page. ' +
-        'Switch off any time — you never owe anyone a reason.'
-      : 'Turn this on to show as walking now, and requests will ring here. Turn it off and you ' +
-        'disappear — you’re never obliged to accept anything.';
   }
-
-  $('liveToggle').onchange = function(){
-    var on = $('liveToggle').checked;
-    // Browsers block sound until the page is interacted with. This tap is
-    // that interaction, so take it — otherwise the first request would ring
-    // to nobody.
-    if (on) LTPush.unlock();
-    $('liveToggle').disabled = true;
-    LT.api('PATCH', '/api/guides/me', { live: on })
-      .then(function(res){
-        setLive(res.guide.live);
-        LT.toast(res.guide.live ? 'You’re on the map.' : 'You’re off the map.',
-                 res.guide.live ? 'good' : '');
-      })
-      .catch(function(err){ setLive(!on); LT.toast(err.message, 'bad'); })
-      .then(function(){ $('liveToggle').disabled = false; });
-  };
 
   /* ------------------------------------------------------------ walk code */
   $('roomIn').addEventListener('input', function(){
