@@ -397,7 +397,17 @@ async function start(){
     room=new LK.Room({
       adaptiveStream:true, dynacast:true,
       videoCaptureDefaults:{facingMode:'environment',resolution:LK.VideoPresets.h540.resolution},
-      publishDefaults:{videoEncoding:{maxBitrate:1_200_000,maxFramerate:24},simulcast:true}
+      publishDefaults:{
+        videoEncoding:{maxBitrate:1_200_000,maxFramerate:30},
+        simulcast:true,
+        // Default simulcast is three layers, so the 1.2 Mbps budget gets split
+        // and the top layer never gets the whole of it. One fallback layer is
+        // enough for a single viewer, and leaves the good layer well fed.
+        videoSimulcastLayers:[LK.VideoPresets.h180],
+        // The brief is explicit: a soft stream beats a frozen one, so when the
+        // network tightens, give up detail before smoothness.
+        degradationPreference:'maintain-framerate'
+      }
     });
     wire();
     await room.connect(data.url,data.token);

@@ -46,7 +46,15 @@
 
   #live{display:none;position:fixed;inset:0;background:#000;}
   #live.on{display:block;}
-  #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+  /* object-fit:cover was cropping and upscaling the frame — on a wide screen a
+     540p portrait stream got blown up well past its real pixels and looked
+     soft. contain shows the actual pixels; the blurred copy behind it fills
+     the screen so it still reads as full-bleed. */
+  #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+    background:transparent;z-index:1;}
+  #remoteBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    filter:blur(34px) brightness(.45) saturate(1.2);transform:scale(1.12);
+    z-index:0;pointer-events:none;}
   .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
   .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 12px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
   .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
@@ -123,6 +131,7 @@
 </div>
 
 <div id="live">
+  <video id="remoteBg" playsinline autoplay muted aria-hidden="true"></video>
   <video id="remoteVideo" playsinline autoplay></video>
 
   <div class="waiting" id="waitBox">
@@ -134,6 +143,7 @@
   <div class="top">
     <div class="livedot"><i></i><span>LIVE IN BANGKOK</span></div>
     <div class="pill">WATCHING<b class="mono" id="tTime">00:00</b></div>
+    <div class="pill">QUALITY<b class="mono" id="tQual">—</b></div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -249,10 +259,28 @@ async function join(){
         location.href='login.html?next='+back;
         return;
       }
+      // 403 = no accepted booking, 409 = the guide is with someone else.
+      // Both are the walk being private, not a fault, so say what to do next.
+      if(res.status===403||res.status===409){
+        showErr((data.error||'This walk is private.')+' Your requests are under My walks.');
+        $('btnJoin').disabled=true;
+        $('btnJoin').textContent='Not open to you';
+        const a=document.createElement('a');
+        a.className='btn'; a.style.display='block'; a.style.textAlign='center';
+        a.style.textDecoration='none'; a.href='trips.html'; a.textContent='Go to My walks';
+        $('btnJoin').insertAdjacentElement('afterend',a);
+        return;
+      }
       throw new Error(data.error||'Could not join');
     }
 
-    room=new LK.Room({adaptiveStream:true,dynacast:true});
+    room=new LK.Room({
+      // adaptiveStream picks a simulcast layer from the rendered element size
+      // and is slow to climb back up. This video is always full screen, so it
+      // only ever cost quality here.
+      adaptiveStream:false,
+      dynacast:true
+    });
     wire();
     await room.connect(data.url,data.token);
     try{ await room.localParticipant.setMicrophoneEnabled(true); }
@@ -270,10 +298,52 @@ async function join(){
   }
 }
 
+/* Ask for the publisher's top simulcast layer. With adaptiveStream off this is
+   already the default, but a reconnect or a renegotiation can leave a lower
+   layer selected, so state it explicitly. */
+function askForBestQuality(){
+  try{
+    room.remoteParticipants.forEach(p=>{
+      p.videoTrackPublications.forEach(pub=>{
+        if(pub.setVideoQuality) pub.setVideoQuality(LK.VideoQuality.HIGH);
+        // Ask for the full screen's worth of pixels, not the CSS box.
+        if(pub.setVideoDimensions) pub.setVideoDimensions({
+          width: Math.round(window.innerWidth * (window.devicePixelRatio||1)),
+          height: Math.round(window.innerHeight * (window.devicePixelRatio||1))
+        });
+      });
+    });
+  }catch(e){ /* older client, defaults are fine */ }
+}
+
+/* What the traveller is actually receiving. Without this, "the video looks bad"
+   is unfalsifiable - this makes it a number. */
+function watchResolution(){
+  const v=$('remoteVideo'), pill=$('tQual');
+  if(!v||!pill) return;
+  const show=()=>{
+    if(!v.videoWidth) return;
+    pill.textContent=v.videoHeight+'p';
+    pill.title=v.videoWidth+'x'+v.videoHeight;
+  };
+  v.addEventListener('resize',show);
+  v.addEventListener('loadedmetadata',show);
+  clearInterval(watchResolution._t);
+  watchResolution._t=setInterval(show,3000);
+  show();
+}
+
 function wire(){
   room
     .on(LK.RoomEvent.TrackSubscribed,track=>{
-      if(track.kind==='video'){ track.attach($('remoteVideo')); $('waitBox').classList.add('hide'); toast('You can see them — try tapping a direction'); }
+      if(track.kind==='video'){
+        track.attach($('remoteVideo'));
+        track.attach($('remoteBg'));
+        $('waitBox').classList.add('hide');
+        toast('You can see them — try tapping a direction');
+        askForBestQuality();
+        watchResolution();
+      }
       if(track.kind==='audio'){ const el=track.attach(); el.style.display='none'; document.body.appendChild(el); }
     })
     .on(LK.RoomEvent.ParticipantDisconnected,()=>{

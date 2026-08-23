@@ -625,16 +625,16 @@ LT.start('explore').then(function(account){
       '<button class="btn btn-primary btn-block" id="reserve" type="button">' +
         (g.live ? 'Reserve ' + minutes + ' minutes' : 'Ask ' + LT.esc(g.name) + ' for a time') +
       '</button>' +
-      (g.live && g.room
-        ? '<button class="btn btn-glass btn-block" id="joinNow" type="button">Join this walk now →</button>'
-        : '') +
+      // No "join now": a walk is one guide and one traveller, so the way in is
+      // a request the guide accepts. Offering a button the server refuses
+      // would just teach people the app is broken.
+      '' +
     '</div>';
 
     $('durs').querySelectorAll('[data-m]').forEach(function(b){
       b.onclick = function(){ minutes = +b.dataset.m; renderDetail(); };
     });
     $('reserve').onclick = reserve;
-    if ($('joinNow')) $('joinNow').onclick = function(){ location.href = LT.watchUrl(g.room); };
   }
 
   function reserve(){

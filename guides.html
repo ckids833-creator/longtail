@@ -477,9 +477,9 @@ LT.start('guides').then(function(user){
       : '<div class="stack">' +
           '<a class="btn btn-primary btn-block" href="explore.html?guide=' +
             encodeURIComponent(g.id) + '">See on the map & book →</a>' +
-          (g.live && g.room
-            ? '<a class="btn btn-glass btn-block" href="' + LT.watchUrl(g.room) +
-              '">Watch this walk now →</a>'
+          (g.live
+            ? '<p class="hint" style="text-align:center">Walking right now. A walk is one guide ' +
+              'and one traveller, so ask and they’ll accept when they’re free.</p>'
             : '') +
         '</div>';
 
