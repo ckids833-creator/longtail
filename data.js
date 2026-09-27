@@ -23,7 +23,7 @@ var LT = (function () {
   var DEMO_MODE = true;   // recomputed by load() once real rows arrive
   var OFFLINE   = false;  // true when the API could not be reached
 
-  /* ---- economics: single source of truth, mirrors index.html ---- */
+  /* ---- economics: single source of truth, mirrors camera.html ---- */
   var RATE_BAHT_PER_MIN = 15;
   var PILOT_PRICE_BAHT  = 200;   // the validation offer
   var PILOT_MINUTES     = 25;

@@ -1,11 +1,11 @@
 # Longtail — solo guide build
 
-Two pages. `index.html` is yours. `watch.html` is theirs.
+Two pages. `camera.html` is yours. `watch.html` is theirs.
 You are always the guide; there is no role to pick, and nothing for
 your traveler to configure.
 
 ```
-index.html      ← you (guide). Bookmark this one.
+camera.html     ← you (guide). Bookmark this one.
 watch.html      ← your traveler. They only get this via your link.
 api/token.js    ← runs on Vercel. You never touch it.
 package.json
@@ -108,7 +108,7 @@ Anyone with the link can join. Fine for arranged tests — don't post it publicl
 
 ## Changing your rate
 
-In `index.html`, near the top of the script:
+In `camera.html`, near the top of the script:
 
 ```js
 const RATE = 15, FEE = 0.12;

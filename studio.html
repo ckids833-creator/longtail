@@ -190,7 +190,7 @@
         <span id="liveSub">You appear on the globe only while you’re actually streaming.
           Open the walk app to start; close it and you’re off the map.</span>
       </div>
-      <a class="btn btn-primary" id="openApp" href="index.html">
+      <a class="btn btn-primary" id="openApp" href="camera.html">
         <i class="ti ti-player-play"></i> Open the walk app</a>
     </section>
 
@@ -291,7 +291,7 @@ LT.start('studio').then(function(user){
     $('tXp').textContent = g.xp || 0;
 
     $('roomIn').value = g.room || '';
-    $('openApp').href = g.room ? 'index.html?room=' + encodeURIComponent(g.room) : 'index.html';
+    $('openApp').href = g.room ? 'camera.html?room=' + encodeURIComponent(g.room) : 'camera.html';
 
     setLive(g.live);
     paintLiveSession(d.live_session);
@@ -344,7 +344,7 @@ LT.start('studio').then(function(user){
     LT.api('PATCH', '/api/guides/me', { room: code })
       .then(function(res){
         data.guide.room = res.guide.room;
-        $('openApp').href = 'index.html?room=' + encodeURIComponent(res.guide.room);
+        $('openApp').href = 'camera.html?room=' + encodeURIComponent(res.guide.room);
         LT.toast('Walk code saved.', 'good');
       })
       .catch(function(err){
@@ -413,10 +413,10 @@ LT.start('studio').then(function(user){
         : b.status === 'accepted'
           ? '<div class="acts">' +
               '<button class="yes" data-start="' + b.id + '" type="button">Start this walk</button>' +
-              '<a class="yes" href="index.html?room=' + encodeURIComponent(b.room_code) + '">Open camera</a>' +
+              '<a class="yes" href="camera.html?room=' + encodeURIComponent(b.room_code) + '">Open camera</a>' +
             '</div>'
           : b.status === 'live'
-            ? '<div class="acts"><a class="yes" href="index.html?room=' +
+            ? '<div class="acts"><a class="yes" href="camera.html?room=' +
               encodeURIComponent(b.room_code) + '">Back to the walk</a></div>'
             : '';
       return '<div class="bk">' +
