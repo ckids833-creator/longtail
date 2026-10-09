@@ -20,7 +20,10 @@
 var LT = (function () {
   'use strict';
 
-  var DEMO_MODE = true;   // recomputed by load() once real rows arrive
+  // Off until load() actually sees a demo row. Starting it on put a 'Demo data'
+  // bar on every page that never loads the directory - Studio, profiles,
+  // sign-in - even with no demo guide anywhere in the database.
+  var DEMO_MODE = false;
   var OFFLINE   = false;  // true when the API could not be reached
 
   /* ---- economics: single source of truth, mirrors camera.html ---- */
