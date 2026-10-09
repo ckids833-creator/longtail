@@ -564,6 +564,11 @@ var LT = (function () {
     return 'watch.html?room=' + encodeURIComponent(String(code).trim());
   }
 
+  /** The page that follows one request: waiting, accepted, then join. */
+  function walkUrl(bookingId){
+    return 'watch.html?b=' + encodeURIComponent(bookingId);
+  }
+
   /* search across both lists */
   function search(q){
     q = String(q||'').trim().toLowerCase();
@@ -880,7 +885,7 @@ var LT = (function () {
     THAILAND_BOUNDS: THAILAND_BOUNDS,
     THAILAND_CENTER: THAILAND_CENTER,
     guide: guide, place: place, liveGuides: liveGuides, guidesNear: guidesNear,
-    distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl,
+    distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl, walkUrl: walkUrl,
     search: search, avatarStyle: avatarStyle, esc: esc,
     avatar: avatar, media: media, profileUrl: profileUrl, shrinkImage: shrinkImage, day: day,
     toast: toast, boot: boot, start: start, watchReveals: watchReveals, escClose: escClose,

@@ -612,7 +612,9 @@ function onFix(pos){
   sendFix();
 }
 
-async function sendFix(){
+/* walking: true marks the report as coming from a walk in progress, which is
+   how the server tells a live camera from one closed without ending the walk. */
+async function sendFix(walking){
   if (!lastFix) return;
   const root = apiRoot();
   let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
@@ -621,7 +623,7 @@ async function sendFix(){
     await fetch(root + '/api/guides/me/location', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
-      body: JSON.stringify(lastFix)
+      body: JSON.stringify(Object.assign({}, lastFix, { walking: walking === true }))
     });
   } catch { /* a dead spot; the next one goes */ }
 }
@@ -644,7 +646,7 @@ function startLocationStream(){
   );
   // Report on a timer rather than on every fix: watchPosition can fire many
   // times a second and each one would be a request.
-  geoPushTimer = setInterval(sendFix, 15000);
+  geoPushTimer = setInterval(() => sendFix(true), 15000);
 }
 
 function stopLocationStream(){
@@ -657,13 +659,17 @@ function stopLocationStream(){
 
 /* ---- the session ----
    The walk app owns the session now. "Live" is not a switch a guide can leave
-   on; it means a walk is running, which is exactly this. */
-let sessionId = null;
+   on; it means a walk is running, which is exactly this.
+
+   The server cuts the walk into one segment per traveller as they come and
+   go, so the id it started with goes stale. Every call names 'current'
+   instead: whatever this guide's running walk is right now. */
+let sessionOpen = false;
 
 async function openSession(){
   const root = apiRoot();
   let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
-  if (!root || !tok) return null;
+  if (!root || !tok) return false;
 
   const res = await fetch(root + '/api/sessions', {
     method: 'POST',
@@ -672,29 +678,24 @@ async function openSession(){
   });
   const data = await res.json().catch(() => ({}));
 
-  if (res.ok) return data.session && data.session.id;
-
-  // Studio may already have started this walk from an accepted booking.
-  if (res.status === 409){
-    const st = await fetch(root + '/api/studio', { headers: { Authorization: 'Bearer ' + tok } })
-      .then(r => r.json()).catch(() => null);
-    return st && st.live_session ? st.live_session.id : null;
-  }
+  // 409: Studio already started this walk from an accepted booking. Carry on
+  // with that one.
+  if (res.ok || res.status === 409) return true;
   throw new Error(data.error || 'Could not start the walk.');
 }
 
 async function closeSession(){
-  if (!sessionId) return;
+  if (!sessionOpen) return;
   const root = apiRoot();
   let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
   try {
-    await fetch(root + '/api/sessions/' + sessionId + '/end', {
+    await fetch(root + '/api/sessions/current/end', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
       body: JSON.stringify({ ended_by: 'guide' })
     });
   } catch { /* the traveller still gets dropped; the row can be closed later */ }
-  sessionId = null;
+  sessionOpen = false;
 }
 
 /* ---- break ----
@@ -706,9 +707,9 @@ let paused = false, pausedSince = 0, pausedTick = null;
 async function setPaused(on){
   const root = apiRoot();
   let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
-  if (sessionId && root && tok){
+  if (sessionOpen && root && tok){
     try {
-      await fetch(root + '/api/sessions/' + sessionId + (on ? '/pause' : '/resume'), {
+      await fetch(root + '/api/sessions/current' + (on ? '/pause' : '/resume'), {
         method: 'POST', headers: { Authorization: 'Bearer ' + tok }
       });
     } catch { /* the local state still matters to the traveller */ }
@@ -765,7 +766,7 @@ async function start(){
     // Report where we are, then open the walk. Opening it is what marks the
     // guide live — there is no separate switch any more.
     await sendFix();
-    sessionId = await openSession();
+    sessionOpen = await openSession();
     // The Worker backend only hands out a guide token to a signed-in guide who
     // owns this walk code. guides.html puts that session token in lt_token.
     // The old Vercel endpoint ignores the header, so this is safe either way.

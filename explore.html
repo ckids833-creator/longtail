@@ -136,8 +136,7 @@
   @media (max-width:700px){
     .cmd-row{flex-wrap:wrap;}
     .searchwrap{flex:1 1 100%;order:1;}
-    #joinBtn{flex:1 1 58%;order:2;}
-    #codeBtn{flex:1 1 38%;order:3;}
+    #joinBtn{flex:1 1 100%;order:2;}
     .hero{top:calc(var(--nav-h) + 4vh);}
     .hero p{display:none;}
     .navlinks .navlink{padding:9px 10px;font-size:12.5px;}
@@ -243,8 +242,7 @@
              aria-label="Search places and guides" aria-expanded="false" aria-controls="results">
       <div class="results" id="results" role="listbox"></div>
     </div>
-    <button class="btn btn-primary" id="joinBtn" type="button">Join a live walk</button>
-    <button class="btn btn-glass" id="codeBtn" type="button">Join with code</button>
+    <button class="btn btn-primary" id="joinBtn" type="button">See who’s walking</button>
   </div>
   <div class="cmd-meta">
     <span class="live"><i></i><span id="liveCount">—</span> walking now</span>
@@ -277,32 +275,6 @@
   </div>
   <div class="sheet-body" id="dtBody"></div>
   <div class="sheet-foot" id="dtFoot"></div>
-</div>
-
-<!-- ============ join with code ============ -->
-<div class="sheet center" id="codeModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
-  <div class="sheet-head">
-    <div>
-      <h2 id="cmTitle">Join with code</h2>
-      <p>Your guide sent you a walk code. Type it here.</p>
-    </div>
-    <button class="x" data-close type="button" aria-label="Close">✕</button>
-  </div>
-  <div class="sheet-body">
-    <div class="field">
-      <label class="label" for="codeIn">Walk code</label>
-      <input id="codeIn" class="input codebig" autocomplete="off" autocapitalize="off"
-             spellcheck="false" placeholder="yaowarat" maxlength="40">
-      <div class="err-text" id="codeErr"></div>
-      <p class="hint">3–40 characters. Letters, numbers, dashes and underscores.</p>
-    </div>
-    <div class="note plain">
-      Anyone holding this code can join the walk. Only share it with the person you arranged it with.
-    </div>
-  </div>
-  <div class="sheet-foot">
-    <button class="btn btn-primary btn-block" id="codeGo" type="button">Join the walk →</button>
-  </div>
 </div>
 
 <script src="config.js"></script>
@@ -619,20 +591,7 @@ LT.start('explore').then(function(account){
       '</div>' +
 
       '<p class="dt-topic">' + LT.esc(g.topic) + '</p>' +
-      '<p class="dt-blurb">' + LT.esc(g.blurb) + '</p>' +
-
-      '<div class="facts">' +
-        '<div class="fact"><div class="k">Rate</div><div class="v green">' +
-          LT.baht(g.rate) + ' / min</div></div>' +
-        '<div class="fact"><div class="k">Walks done</div><div class="v">' + g.sessions + '</div></div>' +
-        '<div class="fact"><div class="k">Rating</div><div class="v">' +
-          (g.rating ? g.rating.toFixed(1) + ' ★' : '—') + '</div></div>' +
-        '<div class="fact"><div class="k">Recording</div><div class="v">Never</div></div>' +
-      '</div>' +
-
-      '<div class="tags" style="margin-bottom:20px">' +
-        g.tags.map(function(t){ return '<span class="tag green">' + LT.esc(t) + '</span>'; }).join('') +
-      '</div>' +
+      (g.blurb ? '<p class="dt-blurb">' + LT.esc(g.blurb) + '</p>' : '') +
 
       '<div class="label">How long</div>' +
       '<div class="steps" id="durs">' +
@@ -642,35 +601,18 @@ LT.start('explore').then(function(account){
         }).join('') +
       '</div>' +
 
-      '<div class="total">' +
-        '<span class="k">' + minutes + ' minutes with ' + LT.esc(g.name) + '</span>' +
-        '<span class="v">' + LT.baht(minutes * g.rate) + '</span>' +
-      '</div>' +
-      '<p class="hint" style="margin-bottom:16px">' +
-        'We hold the amount and refund whatever you don’t use. If the hold runs out the walk ends — ' +
-        'you are never charged more than this without asking.</p>' +
+      // What happens next, in one line. The walk page takes it from here.
+      '<p class="hint" style="margin:14px 0 0">' + LT.esc(g.name.split(' ')[0]) +
+        ' gets your request and answers. You join from the next screen once they say yes. ' +
+        'Nothing is charged — payments aren’t connected yet.</p>';
 
-      '<div class="note plain" style="margin-bottom:14px">' +
-        LT.esc(g.name) + ' will see this as coming from <b>' +
-        LT.esc(LT.auth.user().display_name) + '</b> (@' + LT.esc(LT.auth.user().username) + ').' +
-      '</div>' +
-
-      (demo
-        ? '<div class="note">This guide is placeholder data while the pilot runs. ' +
-          'The one walk you can actually join today is <b>Nont — Yaowarat</b>.</div>'
-        : '<div class="note plain">Payment isn’t connected yet. Reserve below and you’ll get the ' +
-          'walk code to join — the pilot is arranged by hand, ' + LT.baht(LT.PILOT_PRICE_BAHT) +
-          ' for ' + LT.PILOT_MINUTES + ' minutes.</div>');
-
-    $('dtFoot').innerHTML = '<div class="stack">' +
+    // No "join now": a walk is one guide and one traveller, so the way in is a
+    // request the guide accepts. Offering a button the server refuses would
+    // just teach people the app is broken.
+    $('dtFoot').innerHTML =
       '<button class="btn btn-primary btn-block" id="reserve" type="button">' +
-        (g.live ? 'Reserve ' + minutes + ' minutes' : 'Ask ' + LT.esc(g.name) + ' for a time') +
-      '</button>' +
-      // No "join now": a walk is one guide and one traveller, so the way in is
-      // a request the guide accepts. Offering a button the server refuses
-      // would just teach people the app is broken.
-      '' +
-    '</div>';
+        'Request ' + minutes + ' min · ' + LT.baht(minutes * g.rate) +
+      '</button>';
 
     $('durs').querySelectorAll('[data-m]').forEach(function(b){
       b.onclick = function(){ minutes = +b.dataset.m; renderDetail(); };
@@ -689,41 +631,15 @@ LT.start('explore').then(function(account){
     // signed-in account, not from anything typed here.
     LT.api('POST', '/api/bookings', { guide_id: g.id, minutes: mins })
       .then(function(res){
-        showRequested(g, mins, res.booking.id);
+        // Straight to the walk page, which waits for the answer and lets them
+        // in. Asking again for the same guide lands on the same request.
+        location.href = LT.walkUrl(res.booking.id);
       })
       .catch(function(err){
         btn.disabled = false;
-        btn.textContent = 'Reserve ' + mins + ' minutes';
+        btn.textContent = 'Request ' + mins + ' min · ' + LT.baht(mins * g.rate);
         LT.toast(err.message, 'bad');
       });
-  }
-
-  function showRequested(g, mins, bookingId){
-    minutes = mins;
-    $('dtTitle').textContent = 'Requested';
-    $('dtSub').textContent = g.name + ' · ' + g.area;
-    $('dtBody').innerHTML =
-      '<div class="total" style="margin-bottom:18px">' +
-        '<span class="k">' + minutes + ' minutes, held not charged</span>' +
-        '<span class="v">' + LT.baht(minutes * g.rate) + '</span>' +
-      '</div>' +
-      '<p class="dt-blurb">Your request is saved. During the pilot every walk is arranged by hand — ' +
-        'you’ll get a message with a start time and a walk code.</p>' +
-      '<div class="note">No card was taken and nothing has been charged. ' +
-        'Payments are not connected yet.</div>' +
-      '<p class="hint">Reference <span class="mono">' + LT.esc(bookingId || '—') + '</span></p>' +
-      (g.room ? '<div class="field" style="margin-top:18px">' +
-        '<div class="label">Walk code for this route</div>' +
-        '<input class="input codebig" value="' + LT.esc(g.room) + '" readonly>' +
-        '</div>' : '');
-    $('dtFoot').innerHTML = '<div class="stack">' +
-      (g.room ? '<button class="btn btn-primary btn-block" id="goNow" type="button">' +
-        'Join now with this code →</button>' : '') +
-      '<button class="btn btn-ghost btn-block" id="backBtn" type="button">Back to the map</button>' +
-      '</div>';
-    if ($('goNow')) $('goNow').onclick = function(){ location.href = LT.watchUrl(g.room); };
-    $('backBtn').onclick = function(){ hide('detail'); };
-    LT.toast('Request saved — no payment taken.', 'good');
   }
 
   /* =========================================================
@@ -800,36 +716,13 @@ LT.start('explore').then(function(account){
   /* =========================================================
      6. Join with code
      ========================================================= */
-  $('codeBtn').onclick = function(){
-    show('codeModal');
-    setTimeout(function(){ $('codeIn').focus(); }, 380);
-  };
-  $('codeIn').addEventListener('keydown', function(e){ if (e.key === 'Enter') tryCode(); });
-  $('codeIn').addEventListener('input', function(){
-    $('codeIn').classList.remove('bad');
-    $('codeErr').classList.remove('on');
-  });
-  $('codeGo').onclick = tryCode;
-
-  function tryCode(){
-    var c = $('codeIn').value.trim();
-    if (!LT.validCode(c)){
-      $('codeIn').classList.add('bad');
-      $('codeErr').textContent = c
-        ? 'That code has characters the walk server won’t accept.'
-        : 'Enter the code your guide gave you.';
-      $('codeErr').classList.add('on');
-      return;
-    }
-    location.href = LT.watchUrl(c);
-  }
-
   /* ---- deep links ----
-     explore.html?room=xxx   opens the code modal pre-filled
-     explore.html?guide=g-id opens that guide (used by interest.html) */
+     explore.html?room=xxx   an old walk-code link: the walk page works out
+                             whether you have a request with that guide
+     explore.html?guide=g-id opens that guide (profiles, interest.html) */
   var params = new URLSearchParams(location.search);
   var pre = params.get('room');
-  if (pre){ $('codeIn').value = pre; show('codeModal'); }
+  if (pre){ location.replace(LT.watchUrl(pre)); return; }
 
   // The map only loads guides who are walking now, but a profile's "Book a
   // walk" button must work for one who isn't — so wait for the directory,

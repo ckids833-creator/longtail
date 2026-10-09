@@ -32,15 +32,44 @@
   .in:focus{outline:none;border-color:var(--saffron);}
   .btn{width:100%;padding:17px;border-radius:13px;font-weight:700;font-size:16px;margin-top:18px;background:var(--saffron);color:var(--ink);}
   .btn:disabled{background:var(--ink-3);color:var(--faint);cursor:not-allowed;}
-  .whoBox{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;
-    background:var(--ink-2);border:1px solid var(--line);}
-  .whoAv{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
-    font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:18px;color:#12181B;
-    background:linear-gradient(140deg,#8FE3AC,#1E7A54);}
-  .whoT{min-width:0;}
-  .whoT b{display:block;font-size:15px;font-weight:650;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;}
-  .whoT span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
+  /* ---- the walk you asked for: one screen from request to joining ---- */
+  [hidden]{display:none !important;}
+  .stage{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;}
+  .face{position:relative;width:104px;height:104px;margin-bottom:14px;}
+  .face .av{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+    font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:42px;color:#12181B;
+    border:3px solid var(--ink);}
+  .face .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .face::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:2px solid rgba(239,231,216,.12);}
+  .face.is-waiting::before{border-color:rgba(232,163,61,.7);border-right-color:transparent;border-bottom-color:transparent;
+    animation:sp 1.6s linear infinite;}
+  .face.is-ready::before{border-color:var(--signal);box-shadow:0 0 0 0 rgba(70,209,137,.55);animation:readyPulse 1.6s ease-out infinite;}
+  @keyframes readyPulse{0%{box-shadow:0 0 0 0 rgba(70,209,137,.55);}100%{box-shadow:0 0 0 18px rgba(70,209,137,0);}}
+  .face .badge2{position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;
+    display:none;place-items:center;font-size:17px;border:3px solid var(--ink);}
+  .face.is-ok .badge2{display:grid;background:var(--signal);color:var(--ink);}
+  .face.is-no .badge2{display:grid;background:var(--chili);color:var(--paper);}
+  .stage h1{margin-bottom:4px;}
+  .stage .lede{margin-bottom:8px;max-width:34ch;}
+  .ticket{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-bottom:18px;}
+  .ticket span{padding:5px 10px;border-radius:999px;background:var(--ink-2);border:1px solid var(--line);}
+  .steps{list-style:none;display:flex;width:100%;max-width:330px;margin:4px 0 6px;}
+  .steps li{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);}
+  .steps li i{width:14px;height:14px;border-radius:50%;background:var(--ink-3);border:2px solid var(--line);z-index:1;}
+  .steps li::before{content:'';position:absolute;top:6px;right:50%;width:100%;height:2px;background:var(--line);}
+  .steps li:first-child::before{display:none;}
+  .steps li.done{color:var(--paper);}
+  .steps li.done i{background:var(--signal);border-color:var(--signal);}
+  .steps li.done::before{background:var(--signal);}
+  .steps li.now{color:var(--saffron);}
+  .steps li.now i{border-color:var(--saffron);background:rgba(232,163,61,.25);animation:pd 1.6s infinite;}
+  .stage .btn{margin-top:22px;}
+  .btn.go{background:var(--signal);}
+  .btn.quiet{background:var(--ink-2);color:var(--paper);border:1px solid var(--line);}
+  a.btn{display:block;text-decoration:none;}
+  .linkbtn{background:none;color:var(--faint);font-size:13px;text-decoration:underline;margin-top:16px;padding:6px;}
   .hint{font-size:12px;color:var(--faint);line-height:1.6;margin-top:14px;text-align:center;}
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
@@ -143,20 +172,21 @@
 
 <div id="lobby">
   <div class="brand"><div class="mark">L</div><span>LONGTAIL</span></div>
-  <h1>You're about to walk <em>Bangkok</em></h1>
-  <p class="lede">Someone is there right now with a camera. You'll see what they see, and you can tell them where to go — turn left, get closer, what's that.</p>
-
-  <div class="whoBox" id="whoBox">
-    <div class="whoAv" id="whoAv">?</div>
-    <div class="whoT">
-      <b id="whoName">Checking your account…</b>
-      <span id="whoHandle"></span>
-    </div>
+  <!-- One screen from "I asked" to "I'm in": it moves on by itself. -->
+  <div class="stage" id="stage" aria-live="polite">
+    <div class="face" id="face"><span class="av" id="faceAv"></span><span class="badge2" id="faceBadge"></span></div>
+    <h1 id="stTitle">Checking your walk…</h1>
+    <p class="lede" id="stSub"></p>
+    <div class="ticket" id="ticket" hidden><span id="tkMins"></span><span id="tkPrice"></span></div>
+    <ol class="steps" id="steps" hidden>
+      <li data-s="1"><i></i>Requested</li>
+      <li data-s="2"><i></i>Accepted</li>
+      <li data-s="3"><i></i>Walking</li>
+    </ol>
+    <button class="btn go" id="btnJoin" type="button" hidden>Join the walk</button>
+    <a class="btn quiet" id="btnAlt" hidden></a>
+    <button class="linkbtn" id="btnCancel" type="button" hidden>Cancel request</button>
   </div>
-
-  <button class="btn" id="btnJoin" disabled>Join the walk</button>
-
-  <p class="hint">Your camera stays off. They'll hear you if you talk — allow microphone access when asked.</p>
   <div class="err" id="errBox"></div>
 </div>
 
@@ -246,20 +276,17 @@ const enc=new TextEncoder(), dec=new TextDecoder();
 const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 
 const qs=new URLSearchParams(location.search);
-const ROOM=qs.get('room')||'';
-const API=qs.get('api')||((window.LONGTAIL_API||'').replace(/\/+$/,'')+'/api/token')||'/api/token';
-
-if(!ROOM){ showErr('This link is missing its walk code. Ask your guide to send the link again.'); $('btnJoin').disabled=true; }
+// ?b=<booking> is the request this page follows. ?room=<walk code> is an older
+// link: it is resolved to the traveller's request for that guide, if any.
+let BOOKING=qs.get('b')||'';
+const LEGACY_ROOM=qs.get('room')||'';
+let ROOM='', GUIDE=null, STATE=null, pollT=null, joined=false, hereT=null;
 
 function showErr(m){ $('errBox').textContent=m; $('errBox').classList.add('on'); }
+function clearErr(){ $('errBox').classList.remove('on'); }
 function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>$('toast').classList.remove('on'),ms); }
 
-/* ---- who is watching ----
-   The account already knows this, and the server uses the account's display
-   name for the LiveKit identity regardless of what a client sends. Asking
-   again was pointless friction, and anything typed here was discarded. */
 const API_ROOT=(window.LONGTAIL_API||'').replace(/\/+$/,'');
-let ME=null;
 
 function toLogin(){
   const back=encodeURIComponent(location.pathname.split('/').pop()+location.search);
@@ -268,63 +295,183 @@ function toLogin(){
 
 function authToken(){ try{ return localStorage.getItem('lt_token')||''; }catch{ return ''; } }
 
-async function whoAmI(){
-  const tok=authToken();
-  if(!tok || !API_ROOT) return toLogin();
-  try{
-    const res=await fetch(API_ROOT+'/api/auth/me',{headers:{Authorization:'Bearer '+tok}});
-    if(res.status===401){ try{ localStorage.removeItem('lt_token'); }catch{} return toLogin(); }
-    if(!res.ok) throw new Error('Could not check your account.');
-    const data=await res.json();
-    ME=data.user;
-    $('whoName').textContent=ME.display_name;
-    $('whoHandle').textContent='@'+ME.username;
-    $('whoAv').textContent=(ME.display_name||'?').slice(0,1).toUpperCase();
-    if(ROOM) $('btnJoin').disabled=false;
-  }catch(e){
-    $('whoName').textContent='Could not reach the server';
-    $('whoHandle').textContent='';
-    showErr('Cannot reach the walk server at '+(API_ROOT||'(not configured)')+'. Try again shortly.');
+async function api(method,path,body){
+  const headers={Authorization:'Bearer '+authToken()};
+  if(body) headers['Content-Type']='application/json';
+  let res;
+  try{ res=await fetch(API_ROOT+path,{method,headers,body:body?JSON.stringify(body):undefined}); }
+  catch{ throw new Error('Cannot reach Longtail right now. Check your connection.'); }
+  const data=await res.json().catch(()=>({}));
+  if(res.status===401){ try{ localStorage.removeItem('lt_token'); }catch{} toLogin(); throw new Error('Sign in first.'); }
+  if(!res.ok){ const e=new Error(data.error||('Request failed ('+res.status+')')); e.status=res.status; throw e; }
+  return data;
+}
+
+const firstName=n=>String(n||'Your guide').split(' ')[0];
+const baht=satang=>'฿'+Math.round(satang/100).toLocaleString('en-US');
+function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---- the walk you asked for ----
+   Asking is not joining. This page shows where the request stands and moves
+   on by itself: waiting → accepted → walking → Join. It never offers a Join
+   the server would refuse, because the state comes from the same check the
+   server runs when it hands out the ticket into the walk. */
+const COPY={
+  waiting:  n=>['Waiting for '+n, 'Your request is with them. Stay here — this page moves on by itself the moment they answer.'],
+  accepted: n=>[n+' said yes', 'They are not walking yet. The moment they start, you can join from here.'],
+  busy:     n=>[n+' said yes — you’re next', 'They are finishing a walk with someone else. This page lets you in as soon as they are free.'],
+  ready:    n=>[n+' is walking now', 'Tap to join. Allow your microphone so you can talk to them — your camera stays off.'],
+  declined: n=>[n+' can’t take this one', 'Nothing was charged and nothing is held. Plenty of others are walking.'],
+  cancelled:n=>['Request cancelled', 'Nothing was charged and nothing is held.'],
+  done:     n=>['Your walk with '+n+' is over', 'Thanks for walking. How was it?']
+};
+// The step being waited on: accepted means steps 1-2 are done, walking is next.
+const STEP={waiting:1, accepted:3, busy:3, ready:4, done:4};
+
+function paintFace(state){
+  const g=GUIDE||{};
+  const hue=g.hue==null?150:g.hue;
+  $('faceAv').style.background='linear-gradient(140deg,hsl('+hue+',62%,68%),hsl('+((hue+34)%360)+',52%,42%))';
+  $('faceAv').innerHTML=esc(firstName(g.name).slice(0,1).toUpperCase())+
+    (g.avatar?'<img src="'+esc(API_ROOT+g.avatar)+'" alt="" onerror="this.remove()">':'');
+  const f=$('face');
+  // is-* names: the live view already uses .waiting for its loading overlay.
+  f.className='face'+(state==='waiting'?' is-waiting':'')+(state==='ready'?' is-ready':'')+
+    (['accepted','busy','ready','done'].includes(state)?' is-ok':'')+(['declined','cancelled'].includes(state)?' is-no':'');
+  $('faceBadge').textContent=['declined','cancelled'].includes(state)?'✕':'✓';
+}
+
+function paint(d){
+  const prev=STATE;
+  STATE=d.state;
+  GUIDE=d.guide; ROOM=GUIDE?GUIDE.room:''; guideId=GUIDE?GUIDE.id:null;
+  const n=firstName(GUIDE&&GUIDE.name);
+  const copy=(COPY[STATE]||COPY.waiting)(n);
+  $('stTitle').textContent=copy[0];
+  $('stSub').textContent=copy[1];
+  paintFace(STATE);
+
+  $('ticket').hidden=!d.booking;
+  if(d.booking){
+    $('tkMins').textContent=d.booking.minutes+' min';
+    $('tkPrice').textContent=baht(d.booking.hold_satang)+' held, not charged';
+  }
+
+  const step=STEP[STATE]||0;
+  $('steps').hidden=!step;
+  $('steps').querySelectorAll('li').forEach(li=>{
+    const k=+li.dataset.s;
+    li.className=k<step||step===4?'done':k===step?'now':'';
+  });
+
+  $('btnJoin').hidden=STATE!=='ready';
+  $('btnJoin').disabled=false;
+  $('btnJoin').textContent='Join the walk with '+n;
+  $('btnCancel').hidden=!['waiting','accepted','busy'].includes(STATE);
+
+  const alt=$('btnAlt');
+  alt.hidden=!['declined','cancelled','done'].includes(STATE);
+  if(STATE==='done'&&!d.reviewed){ alt.textContent='Rate your walk ★'; alt.href='guide.html?id='+encodeURIComponent(guideId)+'#review'; alt.className='btn'; }
+  else if(STATE==='done'){ alt.textContent='Back to the map'; alt.href='explore.html'; alt.className='btn quiet'; }
+  else { alt.textContent='Find another guide'; alt.href='explore.html'; alt.className='btn'; }
+
+  // The moment it becomes joinable is the one thing worth interrupting for.
+  if(STATE==='ready'&&prev&&prev!=='ready'){
+    if(navigator.vibrate){ try{ navigator.vibrate([120,60,120]); }catch{} }
+    chime();
+    document.title='Join now — '+n+' is walking';
   }
 }
-whoAmI();
+
+function chime(){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+    const ac=chime.ac=chime.ac||new Ctx();
+    [[660,0],[990,.15]].forEach(([hz,at])=>{
+      const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime+at;
+      o.frequency.value=hz; g.gain.setValueAtTime(.0001,t);
+      g.gain.exponentialRampToValueAtTime(.18,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+.3);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+.32);
+    });
+  }catch{}
+}
+
+async function refresh(){
+  const d=await api('GET','/api/bookings/'+encodeURIComponent(BOOKING));
+  clearErr();
+  paint(d);
+  return d;
+}
+
+/* Poll quickly while something is about to happen, and stop once it has. */
+function schedule(){
+  clearTimeout(pollT);
+  if(joined||!['waiting','accepted','busy','ready'].includes(STATE)) return;
+  pollT=setTimeout(()=>refresh().catch(e=>showErr(e.message)).then(schedule), STATE==='ready'?6000:3000);
+}
+
+async function bookingForRoom(code){
+  const d=await api('GET','/api/trips');
+  const open=(d.trips||[]).filter(t=>t.room_code===code&&['requested','accepted','live'].includes(t.status));
+  return open.length?open[0].id:'';
+}
+
+async function noRequest(){
+  // An old walk-code link, and no request with that guide: say what to do.
+  let g=null;
+  try{ g=((await api('GET','/api/guides')).guides||[]).find(x=>x.room===LEGACY_ROOM)||null; }catch{}
+  GUIDE=g; paintFace('none');
+  const n=firstName(g&&g.name);
+  $('stTitle').textContent=g?'Ask '+n+' first':'Ask a guide first';
+  $('stSub').textContent='Walks are private. Request one, and you’ll join from this page the moment the guide says yes.';
+  const alt=$('btnAlt');
+  alt.hidden=false; alt.className='btn';
+  alt.textContent=g?'Request a walk with '+n:'Find a guide';
+  alt.href=g?'explore.html?guide='+encodeURIComponent(g.id):'explore.html';
+}
+
+async function boot(){
+  if(!authToken()||!API_ROOT) return toLogin();
+  try{
+    if(!BOOKING&&LEGACY_ROOM){
+      BOOKING=await bookingForRoom(LEGACY_ROOM);
+      if(BOOKING) history.replaceState(null,'','watch.html?b='+encodeURIComponent(BOOKING));
+    }
+    if(!BOOKING) return noRequest();
+    await refresh();
+    schedule();
+  }catch(e){
+    if(e.status===404||e.status===403){ $('stTitle').textContent='That request isn’t yours'; $('stSub').textContent='Open it from My walks.'; return; }
+    showErr(e.message);
+    setTimeout(boot,5000);
+  }
+}
+boot();
+
+$('btnCancel').addEventListener('click',async()=>{
+  $('btnCancel').disabled=true;
+  try{ await api('POST','/api/bookings/'+encodeURIComponent(BOOKING)+'/cancel'); await refresh(); schedule(); }
+  catch(e){ showErr(e.message); }
+  $('btnCancel').disabled=false;
+});
 
 $('btnJoin').addEventListener('click',join);
 
 async function join(){
-  if(!ME) return;
-  $('errBox').classList.remove('on');
+  if(STATE!=='ready') return;
+  clearErr();
+  clearTimeout(pollT);
   $('btnJoin').disabled=true; $('btnJoin').textContent='Connecting…';
 
   try{
-    const headers={'Content-Type':'application/json'};
-    const authTok=authToken();
-    if(authTok) headers['Authorization']='Bearer '+authTok;
-
-    const res=await fetch(API,{method:'POST',headers,
-      body:JSON.stringify({room:ROOM,name:ME.display_name,role:'traveler'})});
-    const ctype=res.headers.get('content-type')||'';
-    if(!ctype.includes('application/json')) throw new Error('The walk server is not responding properly. Ask your guide to check their setup.');
-    const data=await res.json();
-    if(!res.ok){
-      if(res.status===401){
-        const back=encodeURIComponent(location.pathname.split('/').pop()+location.search);
-        location.href='login.html?next='+back;
-        return;
-      }
-      // 403 = no accepted booking, 409 = the guide is with someone else.
-      // Both are the walk being private, not a fault, so say what to do next.
-      if(res.status===403||res.status===409){
-        showErr((data.error||'This walk is private.')+' Your requests are under My walks.');
-        $('btnJoin').disabled=true;
-        $('btnJoin').textContent='Not open to you';
-        const a=document.createElement('a');
-        a.className='btn'; a.style.display='block'; a.style.textAlign='center';
-        a.style.textDecoration='none'; a.href='trips.html'; a.textContent='Go to My walks';
-        $('btnJoin').insertAdjacentElement('afterend',a);
-        return;
-      }
-      throw new Error(data.error||'Could not join');
+    let data;
+    try{
+      data=await api('POST','/api/token',{room:ROOM,role:'traveler',booking_id:BOOKING});
+    }catch(e){
+      // Something moved between the last check and the tap (the guide paused,
+      // someone else took the seat). Show the real state again.
+      if(e.status===403||e.status===409){ await refresh().catch(()=>{}); schedule(); showErr(e.message); return; }
+      throw e;
     }
 
     room=new LK.Room({
@@ -336,6 +483,7 @@ async function join(){
     });
     wire();
     await room.connect(data.url,data.token);
+    joined=true;
     try{ await room.localParticipant.setMicrophoneEnabled(true); }
     catch{ toast('No microphone — you can still type directions'); }
 
@@ -344,10 +492,16 @@ async function join(){
     $('waitTxt').textContent='Connected.';
     $('waitSub').textContent='Waiting for their camera…';
     timerInt=setInterval(()=>{ secs++; $('tTime').textContent=fmt(secs); },1000);
+
+    // Tell the server we are still here. Stop, and after a short while the
+    // walk is freed for whoever the guide accepts next.
+    const here=()=>api('POST','/api/bookings/'+encodeURIComponent(BOOKING)+'/here').catch(()=>{});
+    here(); hereT=setInterval(here,15000);
   }catch(e){
     console.error(e);
-    showErr(e.message==='Failed to fetch'?'Could not reach the walk server. Check your connection, or ask your guide for a fresh link.':e.message);
+    showErr(e.message==='Failed to fetch'?'Could not reach the walk. Check your connection and try again.':e.message);
     $('btnJoin').disabled=false; $('btnJoin').textContent='Join the walk';
+    schedule();
   }
 }
 
@@ -392,20 +546,14 @@ function watchResolution(){
    — the walk code no longer admits them once the session is over. */
 let leaving=false;
 
-/* Whose walk this is, looked up once, so the end screen can offer a review.
-   Right after the walk is the one moment a review is easy to write. */
+/* Whose walk this is, so the end screen can offer a review. Right after the
+   walk is the one moment a review is easy to write. Set from the booking. */
 let guideId=null;
-if(API_ROOT && ROOM){
-  fetch(API_ROOT+'/api/guides').then(r=>r.json()).then(d=>{
-    const g=(d.guides||[]).find(x=>x.room===ROOM);
-    if(g) guideId=g.id;
-  }).catch(()=>{});
-}
 
 function leaveToMenu(why){
   if(leaving) return;
   leaving=true;
-  clearInterval(timerInt);
+  clearInterval(timerInt); clearInterval(hereT);
   try{ if(room) room.disconnect(); }catch{}
   $('endedTxt').textContent=why||'The walk has ended.';
   $('endedBox').classList.add('on');
@@ -563,7 +711,13 @@ $('chatClose').addEventListener('click',()=>{
 $('chatSend').addEventListener('click',()=>{ sendChat($('chatIn').value); $('chatIn').value=''; });
 $('chatIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendChat($('chatIn').value); $('chatIn').value=''; } });
 
-$('cLeave').addEventListener('click',async()=>{ clearInterval(timerInt); if(room) await room.disconnect(); location.reload(); });
+// Leaving closes your part of the walk straight away, so the guide can take
+// the next traveller without stopping.
+$('cLeave').addEventListener('click',()=>{
+  clearInterval(hereT);
+  api('POST','/api/bookings/'+encodeURIComponent(BOOKING)+'/leave').catch(()=>{});
+  leaveToMenu('You left the walk.');
+});
 </script>
 </body>
 </html>

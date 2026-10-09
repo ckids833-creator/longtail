@@ -96,13 +96,13 @@ LT.start('trips').then(function(user){
     var joinable = t.joinable;
 
     var action;
-    if (joinable){
-      // The link that actually opens the live walk.
-      action = '<a class="btn btn-primary" href="' + LT.watchUrl(t.room_code) + '">' +
-               (t.status === 'live' ? 'Join — walking now →' : 'Open the live walk →') + '</a>';
-    } else if (t.status === 'requested'){
-      action = '<button class="btn btn-glass" disabled>Waiting for ' +
-               LT.esc(t.guide_name.split(' ')[0]) + '</button>';
+    if (joinable || t.status === 'requested'){
+      // One way into a request, whatever its state: its own page, which waits
+      // for the answer and shows Join only when the guide is ready.
+      action = '<a class="btn ' + (joinable ? 'btn-primary' : 'btn-glass') + '" href="' + LT.walkUrl(t.id) + '">' +
+               (t.status === 'live' ? 'Back to the walk →'
+                 : joinable ? 'Accepted — open →'
+                 : 'Waiting for ' + LT.esc(t.guide_name.split(' ')[0]) + ' →') + '</a>';
     } else if (t.reviewable){
       // A walk you actually took: the natural next step is saying how it went.
       action = '<a class="btn ' + (t.reviewed ? 'btn-glass' : 'btn-primary') + '" href="' +
@@ -121,8 +121,7 @@ LT.start('trips').then(function(user){
           (t.guide_live ? '<span class="live"><i></i>live</span>' : '') +
         '</h3>' +
         '<div class="where">' + LT.esc(t.guide_area) + ' · ' + LT.esc(t.guide_city || '') + '</div>' +
-        '<div class="meta">' + t.minutes + ' min · code ' + LT.esc(t.room_code) +
-          ' · asked ' + LT.esc((t.created_at || '').slice(0,16)) + '</div>' +
+        '<div class="meta">' + t.minutes + ' min · asked ' + LT.esc(LT.day(t.created_at)) + '</div>' +
       '</span>' +
       '<span class="acts">' +
         '<span class="price">' + LT.baht(Math.round(t.hold_satang / 100)) + '</span>' +
