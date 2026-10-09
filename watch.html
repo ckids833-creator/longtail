@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#12181B">
 <meta name="robots" content="noindex">
 <title>Watch live in Bangkok</title>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,17 +45,28 @@
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
 
-  #live{display:none;position:fixed;inset:0;background:#000;}
+  #live{display:none;position:fixed;inset:0;background:#000;overflow:hidden;}
   #live.on{display:block;}
   /* object-fit:cover was cropping and upscaling the frame — on a wide screen a
      540p portrait stream got blown up well past its real pixels and looked
      soft. contain shows the actual pixels; the blurred copy behind it fills
      the screen so it still reads as full-bleed. */
   #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
-    background:transparent;z-index:1;}
+    background:transparent;z-index:1;transform-origin:center center;transition:transform .18s ease-out;}
+  /* The backdrop used to be a second live video under a 34px blur, redrawn
+     every frame — on a mid-range phone that cost more than decoding the walk
+     itself, and the main picture stuttered. Now it is a tiny canvas refreshed
+     once a second: upscaled, it is blurry for free. */
   #remoteBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    filter:blur(34px) brightness(.45) saturate(1.2);transform:scale(1.12);
+    filter:blur(18px) brightness(.45) saturate(1.2);transform:scale(1.12);
     z-index:0;pointer-events:none;}
+  .pill b.weak{color:var(--chili);}
+  .soundBtn{position:absolute;z-index:11;left:50%;top:42%;transform:translate(-50%,-50%);
+    display:none;align-items:center;gap:9px;padding:16px 24px;border-radius:999px;
+    background:var(--saffron);color:var(--ink);font-weight:700;font-size:16px;
+    box-shadow:0 18px 40px -14px rgba(0,0,0,.9);}
+  .soundBtn.on{display:flex;}
+  .soundBtn i{font-size:21px;}
   .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
   .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 12px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
   .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
@@ -150,7 +161,7 @@
 </div>
 
 <div id="live">
-  <video id="remoteBg" playsinline autoplay muted aria-hidden="true"></video>
+  <canvas id="remoteBg" width="24" height="42" aria-hidden="true"></canvas>
   <video id="remoteVideo" playsinline autoplay></video>
 
   <div class="breakOverlay" id="breakBox">
@@ -182,6 +193,7 @@
 
   <div class="toast" id="toast"></div>
   <div class="sent" id="sentBox"></div>
+  <button class="soundBtn" id="soundBtn" type="button"><i class="ti ti-volume"></i>Tap to hear your guide</button>
 
   <div class="bottom">
     <div class="presets">
@@ -364,7 +376,8 @@ function watchResolution(){
   if(!v||!pill) return;
   const show=()=>{
     if(!v.videoWidth) return;
-    pill.textContent=v.videoHeight+'p';
+    // A phone films portrait: 540x960 is "540p", not "960p".
+    pill.textContent=Math.min(v.videoWidth,v.videoHeight)+'p';
     pill.title=v.videoWidth+'x'+v.videoHeight;
   };
   v.addEventListener('resize',show);
@@ -423,7 +436,7 @@ function wire(){
     .on(LK.RoomEvent.TrackSubscribed,track=>{
       if(track.kind==='video'){
         track.attach($('remoteVideo'));
-        track.attach($('remoteBg'));
+        startBackdrop();
         $('waitBox').classList.add('hide');
         toast('You can see them — try tapping a direction');
         askForBestQuality();
@@ -442,11 +455,59 @@ function wire(){
         if(m.type==='chat'){ addChat(m.text,'them'); if(!chatOpen) toast('💬 '+m.text,4500); }
         if(m.type==='paused') showBreak(true);
         if(m.type==='resumed') showBreak(false);
+        if(m.type==='zoom') setZoom(m.z);
       }catch{}
+    })
+    .on(LK.RoomEvent.ConnectionQualityChanged,(q,p)=>{
+      // Say whose signal it is. "The video is bad" with no reason reads as
+      // the app being broken; "their signal is weak on this street" does not.
+      const poor=q===LK.ConnectionQuality.Poor||q===LK.ConnectionQuality.Lost;
+      if(p&&p.isLocal){ myPoor=poor; if(poor) noteSignal('Your connection is weak — the picture may stutter.'); }
+      else { guidePoor=poor; if(poor) noteSignal('Their signal is weak here — the picture will soften until it recovers.'); }
+      $('tQual').classList.toggle('weak',myPoor||guidePoor);
+    })
+    .on(LK.RoomEvent.AudioPlaybackStatusChanged,()=>{
+      // Some browsers will not play the guide's voice until the page is tapped.
+      $('soundBtn').classList.toggle('on',!room.canPlaybackAudio);
     })
     .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); })
     .on(LK.RoomEvent.Reconnected,()=>{ $('waitBox').classList.add('hide'); toast('Back online'); })
     .on(LK.RoomEvent.Disconnected,()=>{ leaveToMenu('The walk has ended.'); });
+}
+
+/* ---- signal notes, at most one a minute ---- */
+let myPoor=false, guidePoor=false, lastSignalNote=0;
+function noteSignal(msg){
+  if(Date.now()-lastSignalNote<60000) return;
+  lastSignalNote=Date.now();
+  toast(msg,5000);
+}
+
+/* ---- sound ---- */
+$('soundBtn').addEventListener('click',async()=>{
+  try{ await room.startAudio(); }catch{}
+  $('soundBtn').classList.toggle('on',!!room&&!room.canPlaybackAudio);
+});
+
+/* ---- zoom ----
+   When the guide's phone has no lens zoom it zooms digitally, and sends how
+   far. Cropping the same way here means the traveller sees what the guide is
+   pointing at, not an unchanged wide shot. */
+function setZoom(z){
+  z=Math.min(3,Math.max(1,Number(z)||1));
+  $('remoteVideo').style.transform=z>1?'scale('+z+')':'';
+}
+
+/* ---- backdrop: a few pixels of the walk, redrawn once a second ---- */
+function startBackdrop(){
+  const v=$('remoteVideo'), c=$('remoteBg'), ctx=c.getContext('2d');
+  clearInterval(startBackdrop._t);
+  startBackdrop._t=setInterval(()=>{
+    if(!v.videoWidth||document.hidden) return;
+    const h=Math.max(8,Math.round(24*v.videoHeight/v.videoWidth));
+    if(c.height!==h) c.height=h;
+    try{ ctx.drawImage(v,0,0,c.width,c.height); }catch{}
+  },1000);
 }
 
 function send(text){

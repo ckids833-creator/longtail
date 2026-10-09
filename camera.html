@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#12181B">
 <meta name="robots" content="noindex">
 <title>Longtail — Guide</title>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,7 +81,7 @@
   .reqBanner .t span{font-size:12px;color:var(--dim);}
   .reqBanner .go{color:var(--signal);font-size:19px;}
 
-  /* While filming this must never cover the frame the traveller is watching. */
+  /* While filming this sits under the top bar and never over the middle of the frame. */
   .reqPill{position:absolute;top:calc(64px + env(safe-area-inset-top));left:50%;
     transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;
     background:rgba(70,209,137,.92);color:#0B1410;border-radius:999px;
@@ -91,6 +91,47 @@
   @keyframes reqIn{from{opacity:0;transform:translate(-50%,-10px);}to{opacity:1;transform:translate(-50%,0);}}
   .reqPill .dot{width:7px;height:7px;border-radius:50%;background:#0B1410;
     animation:pd2 1.5s infinite;}
+  .reqPill{border:none;cursor:pointer;font-family:inherit;}
+  .reqBanner{width:100%;border:1px solid rgba(70,209,137,.45);cursor:pointer;font-family:inherit;text-align:left;}
+
+  /* ---- answer a request without leaving the walk ---- */
+  .reqCard{position:fixed;z-index:16;left:12px;right:12px;top:calc(58px + env(safe-area-inset-top));
+    max-width:420px;margin:0 auto;display:none;flex-direction:column;gap:11px;padding:15px;
+    border-radius:18px;background:rgba(11,20,16,.96);backdrop-filter:blur(12px);
+    border:1px solid rgba(70,209,137,.55);box-shadow:0 22px 50px -16px rgba(0,0,0,.95);
+    animation:reqCardIn .32s ease-out;}
+  .reqCard.on{display:flex;}
+  @keyframes reqCardIn{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:none;}}
+  .reqTop{display:flex;align-items:flex-start;gap:11px;}
+  .reqBell{font-size:22px;line-height:1.1;animation:bellring 1.8s ease-in-out infinite;}
+  .reqT{flex:1;min-width:0;}
+  .reqT b{display:block;font-size:16px;line-height:1.3;}
+  .reqT span{display:block;font-size:12.5px;color:var(--dim);margin-top:2px;}
+  .reqX{background:none;color:var(--dim);font-size:24px;line-height:1;padding:0 4px;}
+  .reqNote{font-size:12px;color:var(--dim);line-height:1.5;padding:9px 11px;border-radius:10px;
+    background:rgba(239,231,216,.06);display:none;}
+  .reqNote.on{display:block;}
+  .reqActs{display:flex;gap:8px;}
+  .reqActs button{flex:1;padding:14px 0;border-radius:12px;font-weight:700;font-size:15px;}
+  .reqYes{background:var(--signal);color:#0B1410;}
+  .reqNo{background:var(--ink-3);border:1px solid var(--line) !important;}
+  .reqActs button:disabled{opacity:.5;}
+  .reqMore{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);text-align:center;display:none;}
+  .reqMore.on{display:block;}
+
+  /* signal and what is actually being sent, next to FILMING */
+  .sig{display:flex;align-items:center;gap:4px;margin-left:4px;padding-left:8px;
+    border-left:1px solid rgba(239,231,216,.2);color:var(--signal);}
+  .sig i.ti{font-size:14px;}
+  .sig b{font-size:9.5px;font-weight:600;color:var(--paper);}
+  .sig.weak{color:var(--saffron);}
+  .sig.lost{color:var(--chili);}
+
+  .soundBtn{position:fixed;z-index:17;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:13px 20px;
+    border-radius:999px;background:var(--saffron);color:var(--ink);font-weight:700;font-size:14.5px;
+    box-shadow:0 14px 34px -12px rgba(0,0,0,.9);}
+  .soundBtn.on{display:flex;}
   @keyframes pd2{0%{opacity:1;}50%{opacity:.25;}100%{opacity:1;}}
 
   #live{display:none;position:fixed;inset:0;background:#000;}
@@ -103,7 +144,7 @@
   .pill b.good{color:var(--signal);}
   .pills{display:flex;gap:6px;}
   .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 11px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
-  .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
+  .livedot > i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
   @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
 
   .zoomRail{position:absolute;right:11px;top:50%;transform:translateY(-50%);z-index:8;display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(10,15,17,.55);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.16);border-radius:26px;padding:10px 6px;}
@@ -184,8 +225,9 @@
   .badge{position:absolute;top:-5px;right:-3px;background:var(--signal);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px;}
   .badge.on{display:flex;}
 
-  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:14;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:14;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
   .toast.on{display:block;}
+  body.req-open .toast{top:calc(250px + env(safe-area-inset-top));}
 
   #summary{display:none;position:fixed;inset:0;background:var(--ink);z-index:20;overflow-y:auto;padding:30px 20px;}
   #summary.on{display:block;}
@@ -205,12 +247,12 @@
 <div id="lobby">
   <div class="brand"><div class="mark">L</div><span>LONGTAIL</span><span class="tagpill">GUIDE</span></div>
 
-  <a class="reqBanner" id="reqBanner" href="studio.html">
+  <button class="reqBanner" id="reqBanner" type="button">
     <span class="bell">🔔</span>
     <span class="t"><b id="reqBannerTitle">1 walk request</b>
-      <span id="reqBannerSub">Tap to open Studio and answer it</span></span>
+      <span id="reqBannerSub">Tap to answer it</span></span>
     <span class="go">→</span>
-  </a>
+  </button>
   <h1>Start a walk</h1>
   <p class="lede">You carry the camera. Send the link to whoever's watching — they open it in a browser and tap Join.</p>
 
@@ -284,7 +326,9 @@
   </div>
 
   <div class="top">
-    <div class="livedot"><i></i><span>FILMING</span></div>
+    <div class="livedot"><i></i><span>FILMING</span>
+      <span class="sig" id="sig" title="Your signal, and the picture size actually going out">
+        <i class="ti ti-antenna-bars-5" id="sigIcon"></i><b class="mono" id="sigRes"></b></span></div>
     <div class="pills">
       <div class="pill">TIME<b class="mono" id="tTime">00:00</b></div>
       <div class="pill">EARNED<b class="mono good" id="tNet">฿0</b></div>
@@ -292,13 +336,11 @@
     </div>
   </div>
 
-  <!-- new walk requests, while filming -->
-  <a class="reqPill" id="reqPill" href="studio.html">
+  <!-- new walk requests, while filming: tap to answer them here -->
+  <button class="reqPill" id="reqPill" type="button">
     <span class="dot"></span>
     <span id="reqPillText">1 walk request</span>
-  </a>
-
-  <div class="toast" id="toast"></div>
+  </button>
 
   <div class="prompt" id="promptBox">
     <div class="who" id="promptWho">Traveler says</div>
@@ -367,6 +409,24 @@
   </div>
 </div>
 
+<!-- a walk request, answered without leaving the walk -->
+<div class="reqCard" id="reqCard" role="alertdialog" aria-labelledby="reqWho" aria-describedby="reqWhat">
+  <div class="reqTop">
+    <span class="reqBell">🔔</span>
+    <div class="reqT"><b id="reqWho">Someone wants a walk</b><span id="reqWhat"></span></div>
+    <button class="reqX" id="reqLater" type="button" aria-label="Answer later">&times;</button>
+  </div>
+  <div class="reqNote" id="reqNote"></div>
+  <div class="reqActs">
+    <button class="reqNo" id="reqDecline" type="button">Decline</button>
+    <button class="reqYes" id="reqAccept" type="button">Accept</button>
+  </div>
+  <div class="reqMore" id="reqMore"></div>
+</div>
+
+<button class="soundBtn" id="soundBtn" type="button"><i class="ti ti-volume"></i>Tap to hear your traveller</button>
+<div class="toast" id="toast"></div>
+
 <div id="summary">
   <div class="sumWrap">
     <div class="brand"><div class="mark">L</div><span>WALK FINISHED</span></div>
@@ -415,16 +475,23 @@ const battPct=()=>battery?Math.round(battery.level*100):null;
 
 const qs=new URLSearchParams(location.search);
 const STATIC=/github\.io$|gitlab\.io$|pages\.dev$|netlify\.app$/.test(location.hostname);
-$('fApi').value=qs.get('api')||(STATIC?'':'/api/token');
-if(STATIC&&!qs.get('api')){ $('advBox').open=true; showErr('This page is on a static host that cannot run the token endpoint. Deploy api/token.js to Vercel and paste its URL below.'); }
-const apiUrl=()=>($('fApi').value.trim()||'/api/token');
+/* The Worker hands a guide token only to a signed-in guide who owns the walk
+   code. This page used to default to the old Vercel /api/token, which gives a
+   camera token to anyone who asks — so use the Worker whenever config.js names
+   one (it also honours ?api=). The old endpoint is only a last resort. */
+const WORKER_TOKEN=(window.LONGTAIL_API||'').replace(/\/+$/,'')
+  ? (window.LONGTAIL_API||'').replace(/\/+$/,'')+'/api/token' : '';
+const DEFAULT_TOKEN=WORKER_TOKEN||(STATIC?'':'/api/token');
+$('fApi').value=DEFAULT_TOKEN;
+if(!DEFAULT_TOKEN){ $('advBox').open=true; showErr('No walk server is configured. Set window.LONGTAIL_API in config.js.'); }
+const apiUrl=()=>($('fApi').value.trim()||DEFAULT_TOKEN||'/api/token');
 
 if(qs.get('room')) $('fRoom').value=qs.get('room');
 function refreshLink(){
   const code=$('fRoom').value.trim();
   if(code.length<3){ $('shareBox').style.display='none'; return; }
   const custom=$('fApi').value.trim();
-  const apiParam=custom&&custom!=='/api/token'?`&api=${encodeURIComponent(custom)}`:'';
+  const apiParam=custom&&custom!==DEFAULT_TOKEN?`&api=${encodeURIComponent(custom)}`:'';
   const base=location.origin+location.pathname.replace(/[^/]*$/,'');
   $('shareLink').textContent=`${base}watch.html?room=${encodeURIComponent(code)}${apiParam}`;
   $('shareBox').style.display='block';
@@ -456,14 +523,26 @@ function toast(m,ms=2800){ $('toast').textContent=m; $('toast').classList.add('o
    540p does, because the same bits are spread over sixteen times the pixels.
    These are the honest costs, which is why the note under the picker says so:
    the brief caps at 540p/1.2Mbps for battery and Thai mobile data, and every
-   step above it spends more of both. */
+   step above it spends more of both.
+
+   layers are the fallbacks the traveller drops to when the street's signal
+   cannot carry the top one. There used to be a single 180p fallback for every
+   setting, so any dip in signal turned the picture to mush. A middle step
+   keeps it watchable while the signal recovers. */
+const P = LK.VideoPresets;
 const QUALITY = {
-  '540p':  { w: 960,  h: 540,  bitrate: 1_200_000, mb: 9,   note: 'The default. About 9 MB a minute.' },
-  '720p':  { w: 1280, h: 720,  bitrate: 2_500_000, mb: 19,  note: 'About 19 MB a minute, and noticeably more battery.' },
-  '1080p': { w: 1920, h: 1080, bitrate: 4_500_000, mb: 34,  note: 'About 34 MB a minute. A 25 minute walk is close to a gigabyte.' },
-  '1440p': { w: 2560, h: 1440, bitrate: 8_000_000, mb: 60,  note: 'About 60 MB a minute. Expect heat and a flat battery.' },
-  '4k':    { w: 3840, h: 2160, bitrate: 14_000_000, mb: 105, note: 'About 105 MB a minute. Wifi only, and many phones cannot sustain it while walking.' }
+  '540p':  { w: 960,  h: 540,  bitrate: 1_200_000, mb: 9,   layers: [P.h180, P.h360], note: 'The default. About 9 MB a minute.' },
+  '720p':  { w: 1280, h: 720,  bitrate: 2_500_000, mb: 19,  layers: [P.h360, P.h540], note: 'About 19 MB a minute, and noticeably more battery.' },
+  '1080p': { w: 1920, h: 1080, bitrate: 4_500_000, mb: 34,  layers: [P.h360, P.h720], note: 'About 34 MB a minute. A 25 minute walk is close to a gigabyte.' },
+  '1440p': { w: 2560, h: 1440, bitrate: 8_000_000, mb: 60,  layers: [P.h540, P.h1080], note: 'About 60 MB a minute. Expect heat and a flat battery.' },
+  '4k':    { w: 3840, h: 2160, bitrate: 14_000_000, mb: 105, layers: [P.h720, P.h1080], note: 'About 105 MB a minute. Wifi only, and many phones cannot sustain it while walking.' }
 };
+
+// iPhones encode H.264 in hardware but VP8 in software. Walking for half an
+// hour on a software encoder heats the phone until it throttles, and the
+// picture softens exactly when the walk gets good.
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 function chosenQuality(){
   const key = ($('fQual') && $('fQual').value) || '540p';
@@ -720,10 +799,11 @@ async function start(){
       publishDefaults:{
         videoEncoding:{maxBitrate:q.bitrate,maxFramerate:30},
         simulcast:true,
-        // Default simulcast is three layers, so the 1.2 Mbps budget gets split
-        // and the top layer never gets the whole of it. One fallback layer is
-        // enough for a single viewer, and leaves the good layer well fed.
-        videoSimulcastLayers:[LK.VideoPresets.h180],
+        // Each layer has its own budget; the top one is never split. With
+        // dynacast, layers nobody is watching are paused, so the fallbacks
+        // only cost data while they are actually needed.
+        videoSimulcastLayers:q.layers,
+        videoCodec:IOS?'h264':'vp8',
         // The brief is explicit: a soft stream beats a frozen one, so when the
         // network tightens, give up detail before smoothness.
         degradationPreference:'maintain-framerate'
@@ -745,10 +825,18 @@ async function start(){
     battStart=battPct();
     keepAwake();
     startTimer();
+    startSendWatch();
     $('waitTxt').textContent='You are live.';
     $('waitSub').textContent='Waiting for your traveler to open the link…';
   }catch(e){
     console.error(e);
+    // The walk was opened before connecting. Close it, or the guide sits on
+    // the map as live with no camera behind the pin.
+    stopLocationStream();
+    await closeSession();
+    try{ if(room) await room.disconnect(); }catch{}
+    room=null;
+    $('live').classList.remove('on'); $('lobby').style.display='';
     showErr(e.message==='Failed to fetch'
       ? 'Could not reach the token server. Check the address under "Token server address".'
       : e.message);
@@ -821,9 +909,11 @@ function markFacing(label){
 }
 
 /* ---------- zoom ----------
-   Uses the camera's own zoom where the phone exposes it (real zoom the
-   traveler also sees). Falls back to a CSS crop, which only changes YOUR
-   preview — the rail says which one you're getting. */
+   Uses the camera's own zoom where the phone exposes it (real zoom, in the
+   stream itself). Most iPhones don't expose it, so the fallback is a digital
+   crop — and the crop is sent to the traveller, whose screen zooms to match.
+   It used to change only the guide's preview: the guide zoomed in on a
+   street sign and the traveller saw nothing change. */
 async function setupZoom(){
   zoomTrack=localTrack()?.mediaStreamTrack||null;
   zoomCaps=null;
@@ -837,8 +927,9 @@ async function setupZoom(){
     zoom=zoomTrack.getSettings?.().zoom||zoomCaps.min;
     $('zHint').textContent='REAL';
   }else{
-    s.min=1; s.max=4; s.step=0.1; zoom=1;
-    $('zHint').textContent='PREVIEW';
+    // Past 3x a digital crop of a phone stream is mostly blur.
+    s.min=1; s.max=3; s.step=0.1; zoom=1;
+    $('zHint').textContent='DIGITAL';
   }
   s.value=zoom;
   await applyZoom(zoom);
@@ -851,17 +942,49 @@ function applyTransform(){
 }
 
 async function applyZoom(z){
-  const min=zoomCaps?zoomCaps.min:1, max=zoomCaps?zoomCaps.max:4;
+  const min=zoomCaps?zoomCaps.min:1, max=zoomCaps?zoomCaps.max:3;
   zoom=Math.min(max,Math.max(min,z));
   $('zSlider').value=zoom;
   $('zVal').textContent=zoom.toFixed(1)+'×';
   $('zIn').disabled=zoom>=max; $('zOut').disabled=zoom<=min;
 
   if(zoomCaps&&zoomTrack){
-    try{ await zoomTrack.applyConstraints({advanced:[{zoom}]}); applyTransform(); return; }
-    catch(e){ console.warn('hardware zoom rejected, falling back',e); zoomCaps=null; $('zHint').textContent='PREVIEW'; }
+    try{ await lensZoom(zoom); applyTransform(); shareZoom(1); return; }
+    catch(e){
+      console.warn('hardware zoom rejected, falling back',e);
+      zoomCaps=null; $('zHint').textContent='DIGITAL';
+      zoom=Math.min(3,Math.max(1,zoom));
+    }
   }
   applyTransform();
+  shareZoom(zoom);
+}
+
+/* A pinch fires dozens of times a second, and each applyConstraints asks the
+   camera to reconfigure. Stacked up, they lag the picture by seconds. Keep at
+   most one in flight and jump straight to the latest value. */
+let lensBusy=false, lensNext=null;
+async function lensZoom(z){
+  lensNext=z;
+  if(lensBusy) return;
+  lensBusy=true;
+  try{
+    while(lensNext!=null){
+      const v=lensNext; lensNext=null;
+      await zoomTrack.applyConstraints({advanced:[{zoom:v}]});
+    }
+  }finally{ lensBusy=false; }
+}
+
+/* Tell the traveller how far to crop. 1 means the lens is doing it, or no zoom. */
+let sharedZoom=1, zoomSendT=null;
+function shareZoom(z){
+  sharedZoom=Math.round(z*100)/100;
+  if(zoomSendT) return;
+  zoomSendT=setTimeout(()=>{ zoomSendT=null; sendData({type:'zoom',z:sharedZoom}); },120);
+}
+function sendData(obj){
+  try{ room&&room.localParticipant.publishData(enc.encode(JSON.stringify(obj)),{reliable:true}); }catch{}
 }
 
 const step=()=>zoomCaps?Math.max((zoomCaps.step||0.1)*3,(zoomCaps.max-zoomCaps.min)/10):0.4;
@@ -885,6 +1008,8 @@ function wire(){
       $('waitBox').classList.add('hide');
       toast(`${p.name||'Your traveler'} joined`);
       if(navigator.vibrate) navigator.vibrate([40,60,40]);
+      // Someone joining mid-zoom should see the same crop the guide does.
+      setTimeout(()=>sendData({type:'zoom',z:sharedZoom}),800);
     })
     .on(LK.RoomEvent.ParticipantDisconnected,()=>{
       $('waitTxt').textContent='They dropped out.';
@@ -904,10 +1029,60 @@ function wire(){
       }catch{}
     })
     .on(LK.RoomEvent.ConnectionQualityChanged,(q,p)=>{
-      if(p?.isLocal&&q===LK.ConnectionQuality.Poor){ toast('Weak signal here'); logEvent('Poor signal'); }
+      if(!p?.isLocal) return;
+      signal=q; paintSignal();
+      if(q===LK.ConnectionQuality.Poor){ toast('Weak signal here — the picture will soften until it recovers'); logEvent('Poor signal'); }
     })
-    .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Signal dropped — reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); logEvent('Reconnecting'); })
-    .on(LK.RoomEvent.Reconnected,async()=>{ $('waitBox').classList.add('hide'); attachLocal(); await setupZoom(); toast('Back online'); });
+    .on(LK.RoomEvent.AudioPlaybackStatusChanged,()=>{
+      // Some browsers refuse to play sound until the page is tapped again.
+      $('soundBtn').classList.toggle('on',!room.canPlaybackAudio);
+    })
+    .on(LK.RoomEvent.Reconnecting,()=>{ signal='reconnecting'; paintSignal(); $('waitTxt').textContent='Signal dropped — reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); logEvent('Reconnecting'); })
+    .on(LK.RoomEvent.Reconnected,async()=>{ signal=LK.ConnectionQuality.Good; paintSignal(); $('waitBox').classList.add('hide'); attachLocal(); await setupZoom(); toast('Back online'); });
+}
+
+$('soundBtn').addEventListener('click',async()=>{
+  try{ await room.startAudio(); }catch{}
+  $('soundBtn').classList.toggle('on',!!room&&!room.canPlaybackAudio);
+});
+
+/* ---------- what is actually going out ----------
+   The guide has no way to know the traveller is watching a soft picture. The
+   badge next to FILMING shows signal and the size really being sent, and a
+   phone that is too hot to encode properly says so instead of quietly
+   degrading for the rest of the walk. */
+let signal=null, sendingP=0, sendWatchT=null, cpuStrikes=0, cpuWarned=false;
+
+function paintSignal(){
+  const Q=LK.ConnectionQuality;
+  const lost=signal==='reconnecting'||signal===Q.Lost;
+  const weak=signal===Q.Poor;
+  $('sig').classList.toggle('lost',lost);
+  $('sig').classList.toggle('weak',weak);
+  $('sigIcon').className='ti '+(lost?'ti-antenna-bars-off':weak?'ti-antenna-bars-2':signal===Q.Good?'ti-antenna-bars-4':'ti-antenna-bars-5');
+  $('sigRes').textContent=lost?'':(sendingP?sendingP+'p':'');
+}
+
+async function watchSending(){
+  const t=localTrack();
+  if(!t||!t.getSenderStats||paused) return;
+  try{
+    const stats=(await t.getSenderStats()).filter(x=>x.frameWidth&&x.frameHeight);
+    if(!stats.length) return;
+    sendingP=Math.max(...stats.map(x=>Math.min(x.frameWidth,x.frameHeight)));
+    paintSignal();
+    cpuStrikes=stats.some(x=>x.qualityLimitationReason==='cpu')?cpuStrikes+1:0;
+    if(cpuStrikes>=4&&!cpuWarned){
+      cpuWarned=true;
+      toast('Your phone is working too hard to keep the picture sharp. Pick a lower quality next walk.',7000);
+      logEvent('Phone limited the picture (cpu)');
+    }
+  }catch{ /* stats are best-effort */ }
+}
+function startSendWatch(){
+  clearInterval(sendWatchT);
+  sendWatchT=setInterval(watchSending,4000);
+  setTimeout(watchSending,1500);
 }
 
 function showPrompt(text,who){
@@ -983,7 +1158,7 @@ $('cMic').addEventListener('click',async()=>{
 $('cLeave').addEventListener('click',end);
 
 async function end(){
-  clearInterval(timerInt); clearInterval(pausedTick); releaseAwake();
+  clearInterval(timerInt); clearInterval(pausedTick); clearInterval(sendWatchT); releaseAwake();
   stopLocationStream();
   // Close the walk before dropping the connection. Ending the session is what
   // takes the guide off the map and stops the clock; disconnecting alone would
@@ -1037,13 +1212,15 @@ window.addEventListener('beforeunload',e=>{ if(room&&secs>0){ e.preventDefault()
    Studio polls for these too, but a guide who is actually
    walking has left Studio for this page — which is exactly
    when they were getting no warning at all. So the walk app
-   watches as well, in the lobby and while filming.
+   watches as well, in the lobby and while filming, and the
+   guide answers right here. Sending them to Studio meant
+   ending the walk to say yes to the next one.
 
    One rule while filming: no sound. The microphone is open
    and live, so a chime here would be played straight into
    the traveller's ear. Vibrate and show instead.
    ========================================================= */
-const REQ_POLL_MS = 20000;
+const REQ_POLL_MS = 12000;
 const REQ_SEEN_KEY = 'lt_seen_requests';   // shared with Studio, so no double-alerting
 let reqTimer = null, reqAudio = null, reqCount = 0;
 
@@ -1099,7 +1276,7 @@ function paintRequests(n){
     banner.classList.toggle('on', n > 0);
     if (n > 0){
       $('reqBannerTitle').textContent = label;
-      $('reqBannerSub').textContent = 'Tap to open Studio and answer ' + (n === 1 ? 'it' : 'them');
+      $('reqBannerSub').textContent = 'Tap to answer ' + (n === 1 ? 'it' : 'them');
     }
   }
 
@@ -1109,6 +1286,105 @@ function paintRequests(n){
     if (n > 0) $('reqPillText').textContent = label + ' waiting';
   }
 }
+
+/* ---- the card ----
+   One request at a time, oldest first. "Later" hides it for now — it stays
+   counted on the pill, and tapping the pill brings it back. */
+let reqQueue = [], reqLater = new Set(), reqShown = null, reqBusy = false;
+
+const firstName = n => String(n || 'They').split(' ')[0];
+const baht = satang => '฿' + Math.round(satang / 100).toLocaleString('en-US');
+
+function withTraveller(){
+  return isFilming() && room.remoteParticipants && room.remoteParticipants.size > 0;
+}
+
+function showReqCard(force){
+  if (force) reqLater.clear();
+  const b = reqQueue.find(x => !reqLater.has(x.id));
+  if (!b){ hideReqCard(); return; }
+  if (reqShown && reqShown.id === b.id && $('reqCard').classList.contains('on')) { paintReqMore(); return; }
+
+  reqShown = b;
+  $('reqWho').textContent = b.traveler_name + ' wants a walk';
+  $('reqWhat').textContent = b.minutes + ' minutes · ' + baht(b.hold_satang) + ' held, not charged';
+
+  // Say what accepting means right now, so nobody is surprised by it.
+  const note = !isFilming() ? ''
+    : withTraveller()
+      ? 'You’re walking with someone. Accept and ' + firstName(b.traveler_name) +
+        ' is next — nothing changes for this walk.'
+      : 'You’re walking with nobody yet. Accept and ' + firstName(b.traveler_name) +
+        ' can join this walk straight away.';
+  $('reqNote').textContent = note;
+  $('reqNote').classList.toggle('on', !!note);
+
+  $('reqAccept').disabled = $('reqDecline').disabled = false;
+  paintReqMore();
+  $('reqCard').classList.add('on');
+  document.body.classList.add('req-open');
+}
+
+function paintReqMore(){
+  const more = reqQueue.filter(x => reqShown && x.id !== reqShown.id).length;
+  $('reqMore').textContent = more ? '+' + more + ' more waiting' : '';
+  $('reqMore').classList.toggle('on', more > 0);
+}
+
+function hideReqCard(){
+  reqShown = null;
+  $('reqCard').classList.remove('on');
+  document.body.classList.remove('req-open');
+}
+
+async function answerReq(status){
+  const b = reqShown;
+  if (!b || reqBusy) return;
+  const root = apiRoot();
+  let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
+  if (!root || !tok){ toast('Sign in again to answer requests.', 4000); return; }
+
+  reqBusy = true;
+  $('reqAccept').disabled = $('reqDecline').disabled = true;
+  try {
+    const res = await fetch(root + '/api/bookings/' + encodeURIComponent(b.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Could not answer that request.');
+
+    reqQueue = reqQueue.filter(x => x.id !== b.id);
+    paintRequests(reqQueue.length);
+    logEvent((status === 'accepted' ? 'Accepted ' : 'Declined ') + b.traveler_name);
+    if (navigator.vibrate){ try { navigator.vibrate(30); } catch {} }
+
+    const who = firstName(b.traveler_name);
+    toast(status === 'declined' ? 'Declined. You never owe anyone a reason.'
+      : !isFilming() ? 'Accepted — ' + who + ' can join once you start walking.'
+      : withTraveller() ? 'Accepted — ' + who + ' is next, after this walk.'
+      : 'Accepted — ' + who + ' can join this walk now.', 5000);
+
+    reqShown = null;
+    showReqCard(false);
+  } catch (e) {
+    toast(e.message, 4500);
+    $('reqAccept').disabled = $('reqDecline').disabled = false;
+  } finally {
+    reqBusy = false;
+  }
+}
+
+$('reqAccept').addEventListener('click', () => answerReq('accepted'));
+$('reqDecline').addEventListener('click', () => answerReq('declined'));
+$('reqLater').addEventListener('click', () => {
+  if (reqShown) reqLater.add(reqShown.id);
+  hideReqCard();
+  showReqCard(false);     // the next one, if there is one nobody has put off
+});
+$('reqPill').addEventListener('click', () => showReqCard(true));
+$('reqBanner').addEventListener('click', () => showReqCard(true));
 
 async function pollRequests(){
   const root = apiRoot();
@@ -1127,20 +1403,24 @@ async function pollRequests(){
     if (!res.ok) return;
 
     const data = await res.json();
-    const pending = (data.bookings || []).filter(b => b.status === 'requested');
+    // The server sends newest first; answer them in the order they arrived.
+    const pending = (data.bookings || []).filter(b => b.status === 'requested').reverse();
     const known = reqSeen();
     const fresh = pending.filter(b => known.indexOf(b.id) === -1);
 
+    reqQueue = pending;
     paintRequests(pending.length);
+    // Answered somewhere else (Studio, another phone)? Take it off the screen.
+    if (reqShown && !pending.some(b => b.id === reqShown.id)) hideReqCard();
 
     if (fresh.length){
       reqMarkSeen(fresh.map(b => b.id));
       reqChime();                                   // silent while filming
       if (navigator.vibrate){ try { navigator.vibrate([120, 60, 120]); } catch {} }
-      const b = fresh[0];
-      toast('🔔 ' + b.traveler_name + ' wants ' + b.minutes + ' minutes' +
-            (isFilming() ? ' — tap the green pill' : ''), 6000);
     }
+    // Pop the card for anything new, or anything still unanswered that the
+    // guide has not put off — so a reload does not bury a request.
+    if (!reqBusy && (fresh.length || !$('reqCard').classList.contains('on'))) showReqCard(false);
   } catch {
     // offline or a dead spot; the next tick tries again
   }
