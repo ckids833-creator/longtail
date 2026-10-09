@@ -165,6 +165,9 @@
   .dt-hero .t h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;
     text-transform:uppercase;font-size:26px;line-height:1;}
   .dt-hero .t p{font-size:12.5px;color:var(--faint);margin-top:5px;}
+  .dt-prof{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+  .dt-prof > span:last-child{font-size:12.5px;color:var(--green-soft);}
+  .dt-prof:hover > span:last-child{text-decoration:underline;}
   .dt-topic{font-size:17px;font-weight:600;line-height:1.45;margin-bottom:10px;}
   .dt-blurb{font-size:14px;color:var(--dim);line-height:1.75;margin-bottom:18px;}
   .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:9px;margin-bottom:18px;}
@@ -538,7 +541,7 @@ LT.start('explore').then(function(account){
     var demo = LT.DEMO_MODE && !g.real ? '<span class="demo-badge">demo</span>' : '';
     return '<button class="gcard glass-hover" data-guide="' + g.id + '" type="button">' +
       '<div class="gcard-top">' +
-        '<span class="avatar" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>' +
+        LT.avatar(g) +
         '<span class="t">' +
           '<h3>' + LT.esc(g.name) + demo +
             (g.live ? '<span class="live"><i></i>live</span>' : '<span class="tag">offline</span>') +
@@ -585,7 +588,10 @@ LT.start('explore').then(function(account){
 
   function openGuide(id){
     var g = LT.guide(id);
-    if (!g) return;
+    if (g) openGuideRow(g);
+  }
+
+  function openGuideRow(g){
     current = g;
     minutes = LT.PILOT_MINUTES;
     flyToPoint(g.lng, g.lat, 13);
@@ -601,11 +607,13 @@ LT.start('explore').then(function(account){
 
     $('dtBody').innerHTML =
       '<div class="dt-hero">' +
-        '<span class="avatar lg" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>' +
+        LT.avatar(g, 'lg') +
         '<span class="t">' +
           '<h2>' + LT.esc(g.name) + '</h2>' +
           '<p>' + (g.live ? 'Walking right now' : 'Not walking at the moment') +
             ' · ' + LT.esc(g.langs.join(' / ')) + '</p>' +
+          '<a class="dt-prof" href="' + LT.profileUrl(g.id) + '">' +
+            LT.stars(g.rating, g.review_count) + '<span>Full profile & reviews →</span></a>' +
         '</span>' +
         (demo ? '<span class="demo-badge">demo guide</span>' : '') +
       '</div>' +
@@ -763,7 +771,7 @@ LT.start('explore').then(function(account){
       html += '<div class="rgroup">Guides</div>';
       html += res.guides.map(function(g){
         return '<button class="ritem" data-guide="' + g.id + '" type="button">' +
-          '<span class="avatar sm" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>' +
+          LT.avatar(g, 'sm') +
           '<span class="t"><b>' + LT.esc(g.name) + '</b>' +
             '<span>' + LT.esc(g.area) + ' · ' + LT.esc(g.city) + '</span></span>' +
           (g.live ? '<span class="live"><i></i>live</span>' : '<span class="tag">offline</span>') +
@@ -823,10 +831,21 @@ LT.start('explore').then(function(account){
   var pre = params.get('room');
   if (pre){ $('codeIn').value = pre; show('codeModal'); }
 
+  // The map only loads guides who are walking now, but a profile's "Book a
+  // walk" button must work for one who isn't — so wait for the directory,
+  // then ask for that one guide if they are not in it.
   var wanted = params.get('guide');
-  if (wanted && LT.guide(wanted)){
-    // wait for the arrival flight so the sheet doesn't fight the camera
-    setTimeout(function(){ openGuide(wanted); }, reduced ? 200 : 1400);
+  if (wanted){
+    dataReady.then(function(){
+      return LT.guide(wanted) ||
+        LT.api('GET', '/api/guides/' + encodeURIComponent(wanted))
+          .then(function(d){ return LT.adaptGuide(d.guide); })
+          .catch(function(){ return null; });
+    }).then(function(g){
+      if (!g) return LT.toast('That guide isn’t available any more.', 'bad');
+      // wait for the arrival flight so the sheet doesn't fight the camera
+      setTimeout(function(){ openGuideRow(g); }, reduced ? 200 : 1400);
+    });
   }
 
   /* =========================================================

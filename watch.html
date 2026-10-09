@@ -74,6 +74,7 @@
   .endedBtn{display:flex;align-items:center;gap:8px;margin-top:8px;background:var(--saffron);
     color:var(--ink);border-radius:12px;padding:14px 22px;font-weight:700;font-size:15px;
     text-decoration:none;}
+  .endedBtn.ghost{background:transparent;color:var(--dim);border:1px solid rgba(239,231,216,.2);margin-top:0;}
 
   .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;z-index:4;background:rgba(0,0,0,.5);}
   .waiting.hide{display:none;}
@@ -162,8 +163,9 @@
   <div class="endedOverlay" id="endedBox">
     <i class="ti ti-flag"></i>
     <h2 id="endedTxt">The walk has ended.</h2>
-    <p>Taking you back to the map in <b id="endedCount">5</b>…</p>
-    <a class="endedBtn" href="explore.html"><i class="ti ti-map"></i>Back to the map now</a>
+    <p>Taking you <span id="endedWhere">back to the map</span> in <b id="endedCount">5</b>…</p>
+    <a class="endedBtn" id="endedRate" href="explore.html" style="display:none"><i class="ti ti-star"></i>Rate your walk</a>
+    <a class="endedBtn" id="endedMap" href="explore.html"><i class="ti ti-map"></i>Back to the map now</a>
   </div>
 
   <div class="waiting" id="waitBox">
@@ -376,6 +378,17 @@ function watchResolution(){
    them staring at a dead room or reload them into a lobby they cannot re-enter
    — the walk code no longer admits them once the session is over. */
 let leaving=false;
+
+/* Whose walk this is, looked up once, so the end screen can offer a review.
+   Right after the walk is the one moment a review is easy to write. */
+let guideId=null;
+if(API_ROOT && ROOM){
+  fetch(API_ROOT+'/api/guides').then(r=>r.json()).then(d=>{
+    const g=(d.guides||[]).find(x=>x.room===ROOM);
+    if(g) guideId=g.id;
+  }).catch(()=>{});
+}
+
 function leaveToMenu(why){
   if(leaving) return;
   leaving=true;
@@ -383,10 +396,17 @@ function leaveToMenu(why){
   try{ if(room) room.disconnect(); }catch{}
   $('endedTxt').textContent=why||'The walk has ended.';
   $('endedBox').classList.add('on');
-  let n=5;
+  const target=guideId ? 'guide.html?id='+encodeURIComponent(guideId)+'#review' : 'explore.html';
+  if(guideId){
+    $('endedRate').href=target;
+    $('endedRate').style.display='';
+    $('endedMap').classList.add('ghost');
+    $('endedWhere').textContent='to rate it';
+  }
+  let n=guideId?8:5;
   const tick=()=>{
     $('endedCount').textContent=n;
-    if(n<=0){ location.href='explore.html'; return; }
+    if(n<=0){ location.href=target; return; }
     n--; setTimeout(tick,1000);
   };
   tick();

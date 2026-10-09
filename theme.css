@@ -322,6 +322,10 @@ button.chip:hover{color:var(--paper);border-color:rgba(87,211,146,.4);background
 }
 .avatar.lg{width:64px;height:64px;font-size:26px;}
 .avatar.sm{width:34px;height:34px;font-size:15px;}
+.avatar.xl{width:112px;height:112px;font-size:44px;}
+/* A photo sits over the initial, so a photo that fails to load shows the letter. */
+.avatar{position:relative;overflow:hidden;}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 
 /* ---------- sheets / modals ---------- */
 .scrim{
@@ -399,6 +403,53 @@ button.chip:hover{color:var(--paper);border-color:rgba(87,211,146,.4);background
 *::-webkit-scrollbar-track{background:transparent;}
 *::-webkit-scrollbar-thumb{background:rgba(232,241,234,.13);border-radius:99px;border:2px solid transparent;background-clip:content-box;}
 *::-webkit-scrollbar-thumb:hover{background:rgba(87,211,146,.4);background-clip:content-box;}
+
+/* ---------- chart marks ----------
+   Darker steps than --green / --saffron on purpose: those are UI colours and
+   sit too light for filled chart marks on this surface. These pass the
+   lightness band and 3:1 contrast against --ink-1. */
+:root{ --mark-green:#34AD70; --mark-saffron:#C4821F; }
+
+/* ---------- profile header: banner, photo, name (guide.html, studio.html) ---------- */
+.phead{border-radius:var(--r-xl);overflow:hidden;margin-bottom:20px;}
+.phead .banner{position:relative;height:clamp(140px,24vw,230px);background-size:cover;background-position:center;}
+.phead .banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.phead .banner::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 45%,rgba(7,11,10,.55));}
+.pid{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;position:relative;z-index:1;
+  padding:0 clamp(18px,3vw,28px) clamp(18px,3vw,24px);margin-top:-56px;}
+.pid .avatar{border:4px solid var(--ink-1);box-shadow:0 14px 34px -14px rgba(0,0,0,.9);}
+.pid .who{flex:1;min-width:220px;padding-top:62px;}
+.pid h1{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+  font-size:clamp(30px,4.6vw,46px);line-height:.95;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  overflow-wrap:anywhere;}
+.pid .handle{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--faint);margin-top:8px;}
+.pid .meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--dim);}
+.pid .cta{display:flex;gap:8px;flex-wrap:wrap;padding-top:62px;}
+@media (max-width:640px){
+  .pid .who,.pid .cta{padding-top:0;}
+  .pid .cta{width:100%;}
+  .pid .cta .btn{flex:1;}
+  .pid .cta .btn.icon{flex:0 0 auto;}
+}
+
+/* ---------- reviews: summary, distribution, review rows ---------- */
+.rsum{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
+.rsum .big{text-align:center;min-width:96px;}
+.rsum .big b{display:block;font-size:48px;font-weight:650;line-height:1.05;}
+.rsum .big span{display:block;font-size:12px;color:var(--faint);margin-top:4px;}
+.dist{flex:1;min-width:200px;}
+.dist .r{display:grid;grid-template-columns:22px 1fr 28px;gap:10px;align-items:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin:4px 0;}
+.dist .r span:last-child{text-align:right;}
+.dist .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;}
+.dist .bar i{display:block;height:100%;border-radius:99px;background:var(--mark-saffron);}
+.rv{display:flex;gap:12px;padding:16px 0;border-top:1px solid var(--line);}
+.rv .t{flex:1;min-width:0;}
+.rv .h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:3px;}
+.rv .h b{font-size:14px;font-weight:650;}
+.rv .h span{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);}
+.rv p{font-size:14px;line-height:1.65;color:var(--dim);margin-top:6px;white-space:pre-line;overflow-wrap:anywhere;}
 
 /* ---------- shared page shell for interest / guides ---------- */
 .page{position:relative;z-index:1;padding:calc(var(--nav-h) + 34px) clamp(16px,4vw,40px) 90px;

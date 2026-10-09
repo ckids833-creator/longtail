@@ -103,15 +103,20 @@ LT.start('trips').then(function(user){
     } else if (t.status === 'requested'){
       action = '<button class="btn btn-glass" disabled>Waiting for ' +
                LT.esc(t.guide_name.split(' ')[0]) + '</button>';
+    } else if (t.reviewable){
+      // A walk you actually took: the natural next step is saying how it went.
+      action = '<a class="btn ' + (t.reviewed ? 'btn-glass' : 'btn-primary') + '" href="' +
+               LT.profileUrl(t.guide_id) + '#review">' +
+               (t.reviewed ? 'Your review ✓' : 'Rate this walk ★') + '</a>';
     } else {
       action = '<a class="btn btn-glass" href="guides.html">Find another walk</a>';
     }
 
     return '<div class="trip' + (joinable ? ' ready' : '') + '">' +
-      '<span class="avatar lg" style="' + LT.avatarStyle(t.guide_hue || 150) + '">' +
-        LT.esc((t.guide_name || '?').slice(0,1).toUpperCase()) + '</span>' +
+      '<a href="' + LT.profileUrl(t.guide_id) + '" aria-label="' + LT.esc(t.guide_name) + '’s profile">' +
+        LT.avatar({ name: t.guide_name, hue: t.guide_hue || 150, avatar: t.guide_avatar }, 'lg') + '</a>' +
       '<span class="t">' +
-        '<h3>' + LT.esc(t.guide_name) +
+        '<h3><a href="' + LT.profileUrl(t.guide_id) + '">' + LT.esc(t.guide_name) + '</a>' +
           '<span class="state ' + st.cls + '">' + st.label + '</span>' +
           (t.guide_live ? '<span class="live"><i></i>live</span>' : '') +
         '</h3>' +

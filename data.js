@@ -324,15 +324,17 @@ var LT = (function () {
     var base = apiBase();
     if (!base) return Promise.reject(new Error('No API configured. Set window.LONGTAIL_API in config.js.'));
 
+    // A Blob is an image upload and goes as-is; anything else is JSON.
+    var raw = typeof Blob !== 'undefined' && body instanceof Blob;
     var headers = {};
-    if (body) headers['Content-Type'] = 'application/json';
+    if (body) headers['Content-Type'] = raw ? (body.type || 'application/octet-stream') : 'application/json';
     var t = token();
     if (t) headers['Authorization'] = 'Bearer ' + t;
 
     return fetch(base + path, {
       method: method,
       headers: headers,
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? (raw ? body : JSON.stringify(body)) : undefined
     }).catch(function () {
       // Sitting before .then, this only catches a request that never happened:
       // backend not running, wrong port, DNS, no network. HTTP errors are not
@@ -379,7 +381,10 @@ var LT = (function () {
       rate_satang: g.rate_satang,
       langs: g.langs || [], tags: g.tags || [], hue: g.hue,
       room: g.room, live: !!g.live, real: !g.demo,
-      rating: g.rating, sessions: g.sessions
+      rating: g.rating, sessions: g.sessions,
+      review_count: g.review_count || 0,
+      username: g.username || null, xp: g.xp || 0, experience: g.experience || '',
+      avatar: g.avatar || null, banner: g.banner || null, joined_at: g.joined_at || null
     };
   }
 
@@ -575,6 +580,74 @@ var LT = (function () {
     return 'background:linear-gradient(140deg,hsl('+hue+',62%,68%),hsl('+((hue+34)%360)+',52%,42%));';
   }
 
+  /** Absolute URL for an API-relative image path; '' when there is none. */
+  function media(path){ return path ? apiBase() + path : ''; }
+
+  /**
+   * Someone's avatar: their photo when they have one, over the coloured
+   * initial — which is what shows if the photo fails to load. Takes a guide
+   * (name, hue, avatar) or a user (display_name, avatar_hue). cls: sm | lg | xl.
+   */
+  function avatar(o, cls){
+    o = o || {};
+    var hue = o.hue != null ? o.hue : (o.avatar_hue != null ? o.avatar_hue : 150);
+    var letter = String(o.initial || o.name || o.display_name || '?').slice(0,1).toUpperCase();
+    return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + avatarStyle(hue) + '">' +
+      esc(letter) +
+      (o.avatar ? '<img src="' + esc(media(o.avatar)) + '" alt="" loading="lazy" decoding="async" ' +
+                  'onerror="this.remove()">' : '') +
+    '</span>';
+  }
+
+  function profileUrl(id){ return 'guide.html?id=' + encodeURIComponent(id); }
+
+  /**
+   * Centre-crop an image file to w:h and scale it down (never up) to w wide,
+   * as JPEG. Phones produce 5 MB photos; the server takes a few hundred KB.
+   */
+  function shrinkImage(file, w, h, maxBytes){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onerror = function(){
+        URL.revokeObjectURL(url);
+        reject(new Error('That file is not an image this browser can open.'));
+      };
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        var iw = img.naturalWidth, ih = img.naturalHeight;
+        var sw = iw, sh = ih, sx = 0, sy = 0;
+        if (iw / ih > w / h){ sw = Math.round(ih * w / h); sx = Math.round((iw - sw) / 2); }
+        else { sh = Math.round(iw * h / w); sy = Math.round((ih - sh) / 2); }
+        var scale = Math.min(1, w / sw);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(sw * scale));
+        canvas.height = Math.max(1, Math.round(sh * scale));
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0C1211';            // transparent PNGs: dark, not black
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+        // Step the quality down until it fits rather than failing the upload.
+        (function encode(q){
+          canvas.toBlob(function(blob){
+            if (!blob) return reject(new Error('Could not read that image.'));
+            if (blob.size > maxBytes && q > 0.45) return encode(q - 0.12);
+            resolve(blob);
+          }, 'image/jpeg', q);
+        })(0.86);
+      };
+      img.src = url;
+    });
+  }
+
+  /** "12 Oct 2026" from the server's UTC "YYYY-MM-DD HH:MM:SS". */
+  function day(ts){
+    if (!ts) return '';
+    var d = new Date(String(ts).replace(' ', 'T') + 'Z');
+    return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  }
+
   /* ---------- tiny DOM helpers shared by all three pages ---------- */
   function esc(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
@@ -631,8 +704,8 @@ var LT = (function () {
     }
     return '<div class="navacct">' +
       '<button class="acctchip" id="acctChip" type="button" aria-haspopup="true" aria-expanded="false">' +
-        '<span class="avatar sm" style="' + avatarStyle(u.avatar_hue) + '">' +
-          esc((u.display_name || '?').slice(0,1).toUpperCase()) + '</span>' +
+        avatar({ display_name: u.display_name, avatar_hue: u.avatar_hue,
+                 avatar: session.guide && session.guide.avatar }, 'sm') +
         '<span class="who"><b>' + esc(u.display_name) + '</b>' +
           '<span>@' + esc(u.username) + '</span></span>' +
       '</button>' +
@@ -643,6 +716,8 @@ var LT = (function () {
           '<span class="xp">' + (u.xp || 0) + ' XP</span>' +
         '</div>' +
         (u.is_guide ? '<a class="acctmenu-item" href="studio.html">Studio</a>' : '') +
+        (u.is_guide && u.guide_id
+          ? '<a class="acctmenu-item" href="' + profileUrl(u.guide_id) + '">My profile</a>' : '') +
         '<a class="acctmenu-item" href="trips.html">My walks</a>' +
         '<a class="acctmenu-item" href="guides.html">Guides</a>' +
         '<button class="acctmenu-item danger" id="signOutBtn" type="button">Sign out</button>' +
@@ -804,16 +879,27 @@ var LT = (function () {
     guide: guide, place: place, liveGuides: liveGuides, guidesNear: guidesNear,
     distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl,
     search: search, avatarStyle: avatarStyle, esc: esc,
+    avatar: avatar, media: media, profileUrl: profileUrl, shrinkImage: shrinkImage, day: day,
     toast: toast, boot: boot, start: start, watchReveals: watchReveals, escClose: escClose,
-    api: api, load: load, auth: auth, refreshDemoBar: refreshDemoBar,
+    api: api, load: load, auth: auth, refreshDemoBar: refreshDemoBar, adaptGuide: adaptGuide,
     apiBase: apiBase, renderNav: renderNav, toLogin: toLogin,
     level: function(xp){ return Math.max(1, Math.floor(Math.sqrt((Number(xp)||0)/100)) + 1); },
-    stars: function(rating){
-      if (!rating) return '<span class="stars none">no ratings yet</span>';
-      var full = Math.round(rating);
-      var s = '';
-      for (var i = 1; i <= 5; i++) s += '<i class="' + (i <= full ? 'on' : '') + '">★</i>';
-      return '<span class="stars">' + s + '<b>' + rating.toFixed(1) + '</b></span>';
+    /** Stars with the number beside them; pass count to add "· 12 reviews". */
+    stars: function(rating, count){
+      if (!rating) return '<span class="stars none">no reviews yet</span>';
+      return '<span class="stars" aria-label="' + rating.toFixed(1) + ' out of 5">' + starIcons(rating) +
+        '<b>' + rating.toFixed(1) + (count ? ' · ' + count + (count === 1 ? ' review' : ' reviews') : '') +
+        '</b></span>';
+    },
+    /** Just the five stars, for a single review's rating. */
+    starsOnly: function(rating){
+      return '<span class="stars" aria-label="' + rating + ' out of 5">' + starIcons(rating) + '</span>';
     }
   };
+
+  function starIcons(rating){
+    var full = Math.round(rating), s = '';
+    for (var i = 1; i <= 5; i++) s += '<i class="' + (i <= full ? 'on' : '') + '">★</i>';
+    return s;
+  }
 })();

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070B0A">
+<title>Guide — Longtail</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+  body{padding-bottom:var(--demo-h,0px);}
+  .page{max-width:1080px;}
+
+  .owner-note{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;
+    padding:12px 16px;border-radius:var(--r-md);font-size:13px;color:var(--dim);
+    background:rgba(87,211,146,.07);border:1px solid rgba(87,211,146,.28);}
+  .owner-note span{flex:1;min-width:200px;}
+
+  /* ---------- body ---------- */
+  .pgrid{display:grid;gap:18px;grid-template-columns:1fr;}
+  @media (min-width:900px){ .pgrid{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);} }
+  .panel{border-radius:var(--r-xl);padding:clamp(18px,2.6vw,26px);margin-bottom:18px;}
+  .panel h2{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:19px;margin-bottom:14px;}
+  .headline{font-size:clamp(17px,2vw,20px);font-weight:600;line-height:1.45;margin-bottom:12px;}
+  .prose{font-size:14.5px;line-height:1.75;color:var(--dim);white-space:pre-line;}
+
+  .facts .row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;
+    border-bottom:1px solid var(--line);font-size:13.5px;}
+  .facts .row:last-child{border-bottom:none;}
+  .facts .k{color:var(--dim);}
+  .facts .v{font-weight:600;text-align:right;}
+  .facts .v.green{color:var(--green-soft);}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;}
+
+  .empty{padding:18px 4px;color:var(--faint);font-size:13.5px;line-height:1.6;}
+
+  .write{border-radius:var(--r-lg);padding:18px;margin-bottom:18px;
+    background:rgba(255,255,255,.035);border:1px solid var(--glass-line);}
+  .write h3{font-size:15px;font-weight:650;margin-bottom:10px;}
+  .pick{display:flex;gap:4px;margin-bottom:12px;}
+  .pick button{font-size:30px;line-height:1;color:rgba(232,241,234,.2);padding:2px;transition:transform .15s,color .15s;}
+  .pick button.on{color:var(--saffron);}
+  .pick button:hover{transform:scale(1.12);}
+  .reason{font-size:13px;color:var(--faint);line-height:1.6;margin-bottom:18px;}
+  .reason a{color:var(--green-soft);text-decoration:underline;}
+
+  .missing{padding:60px 0;text-align:center;}
+  .skel{height:300px;border-radius:var(--r-xl);}
+</style>
+</head>
+<body>
+
+<main class="page">
+  <div class="skel glass" id="loading"></div>
+
+  <div id="body" style="display:none">
+    <div class="owner-note" id="ownerNote" style="display:none">
+      <i class="ti ti-eye"></i>
+      <span>This is your profile as travellers see it.</span>
+      <a class="btn btn-glass btn-sm" href="studio.html?edit=1"><i class="ti ti-pencil"></i> Edit profile</a>
+    </div>
+
+    <header class="phead glass">
+      <div class="banner" id="banner"></div>
+      <div class="pid">
+        <span id="pAvatar"></span>
+        <div class="who">
+          <h1 id="pName"></h1>
+          <div class="handle" id="pHandle"></div>
+          <div class="meta" id="pMeta"></div>
+        </div>
+        <div class="cta" id="pCta"></div>
+      </div>
+    </header>
+
+    <div class="pgrid">
+      <div>
+        <section class="panel glass">
+          <h2>About</h2>
+          <p class="headline" id="pTopic"></p>
+          <p class="prose" id="pBlurb"></p>
+        </section>
+
+        <section class="panel glass" id="expPanel">
+          <h2>Experience</h2>
+          <p class="prose" id="pExp"></p>
+        </section>
+
+        <section class="panel glass" id="reviews">
+          <h2 id="rTitle">Reviews</h2>
+          <div class="rsum" id="rSum"></div>
+          <div id="rWrite"></div>
+          <div id="rList"></div>
+        </section>
+      </div>
+
+      <aside>
+        <section class="panel glass facts" id="pFacts"></section>
+        <section class="panel glass" id="tagPanel">
+          <h2>Good for</h2>
+          <div class="tags" id="pTags"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div class="missing page-head" id="missing" style="display:none">
+    <h1>Guide <em>not found</em></h1>
+    <p class="lede" style="margin:0 auto">That profile doesn’t exist, or the guide has stepped away.</p>
+    <a class="btn btn-primary" href="guides.html" style="margin-top:20px">Browse the guides</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+// Public: anyone can read a profile. Writing a review needs an account.
+LT.start('guides', { auth: false }).then(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var gid = new URLSearchParams(location.search).get('id');
+  var data = null, pick = 0;
+
+  function load(){
+    if (!gid) return Promise.resolve(notFound());
+    return LT.api('GET', '/api/guides/' + encodeURIComponent(gid) + '/profile')
+      .then(paint)
+      .catch(function(err){
+        if (err.status === 404) return notFound();
+        $('loading').outerHTML = '<div class="empty">' + LT.esc(err.message) + '</div>';
+      });
+  }
+
+  function notFound(){
+    $('loading').style.display = 'none';
+    $('missing').style.display = 'block';
+  }
+
+  function paint(d){
+    data = d;
+    var g = d.guide, v = d.viewer, r = d.reviews;
+    document.title = g.name + ' — Longtail';
+    $('loading').style.display = 'none';
+    $('body').style.display = 'block';
+    $('ownerNote').style.display = v.is_owner ? 'flex' : 'none';
+
+    // header
+    $('banner').setAttribute('style', g.banner ? '' :
+      'background:radial-gradient(120% 140% at 15% 0%,hsl(' + g.hue + ',55%,38%) 0%,transparent 60%),' +
+      'linear-gradient(120deg,hsl(' + g.hue + ',45%,18%),hsl(' + ((g.hue + 40) % 360) + ',40%,12%));');
+    $('banner').innerHTML = g.banner
+      ? '<img src="' + LT.esc(LT.media(g.banner)) + '" alt="" onerror="this.remove()">' : '';
+    $('pAvatar').innerHTML = LT.avatar(g, 'xl');
+    $('pName').innerHTML = LT.esc(g.name) +
+      (g.live ? '<span class="live"><i></i>walking now</span>' : '') +
+      (g.demo ? '<span class="demo-badge">demo</span>' : '');
+    $('pHandle').textContent = (g.username ? '@' + g.username + ' · ' : '') + g.area + ' · ' + g.city;
+    $('pMeta').innerHTML = LT.stars(r.average, r.count) +
+      '<span class="lvl">level ' + g.level + '</span>';
+
+    $('pCta').innerHTML = v.is_owner
+      ? '<a class="btn btn-glass" href="studio.html"><i class="ti ti-layout-dashboard"></i> Studio</a>'
+      : '<a class="btn btn-primary" href="explore.html?guide=' + encodeURIComponent(g.id) + '">' +
+          (g.live ? 'Ask to join now' : 'Book a walk') + ' →</a>' +
+        '<button class="btn btn-glass icon" id="shareBtn" type="button" aria-label="Share this profile">' +
+          '<i class="ti ti-share"></i></button>';
+    if ($('shareBtn')) $('shareBtn').onclick = share;
+
+    // about
+    $('pTopic').textContent = g.topic;
+    $('pBlurb').textContent = g.blurb || '';
+    $('pBlurb').style.display = g.blurb ? '' : 'none';
+    $('expPanel').style.display = g.experience ? '' : 'none';
+    $('pExp').textContent = g.experience || '';
+
+    // facts
+    var fact = function(k, val, cls){
+      return '<div class="row"><span class="k">' + k + '</span><span class="v' + (cls ? ' ' + cls : '') + '">' +
+        val + '</span></div>';
+    };
+    $('pFacts').innerHTML = '<h2>At a glance</h2>' +
+      fact('Rate', LT.baht(g.rate_satang / 100) + ' / min', 'green') +
+      fact('Walks done', d.stats.walks) +
+      fact('Minutes walked', d.stats.minutes.toLocaleString('en-US')) +
+      fact('Travellers', d.stats.travellers) +
+      fact('Languages', LT.esc(g.langs.join(' · ') || '—')) +
+      fact('Experience', g.xp + ' XP') +
+      (g.joined_at ? fact('Guiding since', LT.esc(LT.day(g.joined_at))) : '') +
+      fact('Recording', 'Never');
+
+    $('tagPanel').style.display = g.tags.length ? '' : 'none';
+    $('pTags').innerHTML = g.tags.map(function(t){
+      return '<span class="tag green">' + LT.esc(t) + '</span>';
+    }).join('');
+
+    paintReviews();
+  }
+
+  /* ----------------------------------------------------------- reviews */
+  function paintReviews(){
+    var r = data.reviews, v = data.viewer, g = data.guide;
+    $('rTitle').textContent = r.count ? 'Reviews · ' + r.count : 'Reviews';
+
+    $('rSum').style.display = r.count ? '' : 'none';
+    if (r.count){
+      $('rSum').innerHTML =
+        '<div class="big"><b>' + r.average.toFixed(1) + '</b>' + LT.starsOnly(r.average) +
+          '<span>' + r.count + (r.count === 1 ? ' review' : ' reviews') + '</span></div>' +
+        '<div class="dist">' + [5, 4, 3, 2, 1].map(function(n){
+          var c = r.distribution[n] || 0;
+          return '<div class="r"><span>' + n + '★</span>' +
+            '<span class="bar"><i style="width:' + (c / r.count * 100) + '%"></i></span>' +
+            '<span>' + c + '</span></div>';
+        }).join('') + '</div>';
+    }
+
+    // The form, or an honest reason it isn't there.
+    if (v.can_review){
+      var mine = v.my_review;
+      pick = mine ? mine.rating : pick;
+      $('rWrite').innerHTML =
+        '<div class="write" id="review">' +
+          '<h3>' + (mine ? 'Your review' : 'How was your walk with ' + LT.esc(g.name.split(' ')[0]) + '?') + '</h3>' +
+          '<div class="pick" id="pick" role="radiogroup" aria-label="Rating">' +
+            [1, 2, 3, 4, 5].map(function(n){
+              return '<button type="button" role="radio" data-n="' + n + '" aria-label="' + n +
+                (n === 1 ? ' star' : ' stars') + '">★</button>';
+            }).join('') +
+          '</div>' +
+          '<textarea class="input" id="rText" maxlength="1000" rows="3" ' +
+            'placeholder="What made it worth it? What could be better? (optional)">' +
+            LT.esc(mine ? mine.comment : '') + '</textarea>' +
+          '<div class="err-text" id="rErr"></div>' +
+          '<button class="btn btn-primary btn-sm" id="rGo" type="button" style="margin-top:12px">' +
+            (mine ? 'Update review' : 'Post review') + '</button>' +
+        '</div>';
+      paintPick();
+      $('pick').querySelectorAll('[data-n]').forEach(function(b){
+        b.onclick = function(){ pick = +b.dataset.n; paintPick(); $('rErr').classList.remove('on'); };
+      });
+      $('rGo').onclick = submit;
+    } else if (!v.signed_in){
+      $('rWrite').innerHTML = '<p class="reason">Walked with ' + LT.esc(g.name.split(' ')[0]) + '? ' +
+        '<a href="login.html?next=' + encodeURIComponent('guide.html?id=' + g.id + '#review') + '">Sign in</a> ' +
+        'to leave a review.</p>';
+    } else if (!v.is_owner){
+      $('rWrite').innerHTML = '<p class="reason">' + LT.esc(v.reason) + '</p>';
+    } else {
+      $('rWrite').innerHTML = '';
+    }
+
+    $('rList').innerHTML = r.items.length
+      ? r.items.map(reviewHtml).join('')
+      : '<div class="empty">No reviews yet. Reviews come from travellers after they’ve walked with ' +
+        LT.esc(g.name.split(' ')[0]) + ', so every one here is from a real walk.</div>';
+  }
+
+  function paintPick(){
+    $('pick').querySelectorAll('[data-n]').forEach(function(b){
+      var on = +b.dataset.n <= pick;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', String(+b.dataset.n === pick));
+    });
+  }
+
+  function reviewHtml(x){
+    return '<div class="rv">' +
+      LT.avatar(x.author, 'sm') +
+      '<div class="t">' +
+        '<div class="h"><b>' + LT.esc(x.author.display_name) + '</b>' +
+          '<span>@' + LT.esc(x.author.username) + ' · ' + LT.esc(LT.day(x.created_at)) +
+          (x.edited ? ' · edited' : '') + '</span></div>' +
+        LT.starsOnly(x.rating) +
+        (x.comment ? '<p>' + LT.esc(x.comment) + '</p>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function submit(){
+    if (!pick){
+      $('rErr').textContent = 'Tap a star rating first.';
+      $('rErr').classList.add('on');
+      return;
+    }
+    $('rGo').disabled = true;
+    LT.api('POST', '/api/guides/' + encodeURIComponent(gid) + '/reviews', {
+      rating: pick, comment: $('rText').value
+    }).then(function(res){
+      LT.toast(res.updated ? 'Review updated.' : 'Thanks — your review is up.', 'good');
+      return load();
+    }).catch(function(err){
+      $('rErr').textContent = err.message;
+      $('rErr').classList.add('on');
+      $('rGo').disabled = false;
+    });
+  }
+
+  function share(){
+    var url = location.origin + location.pathname + '?id=' + encodeURIComponent(gid);
+    var name = data.guide.name;
+    if (navigator.share){
+      navigator.share({ title: name + ' on Longtail', url: url }).catch(function(){});
+      return;
+    }
+    navigator.clipboard.writeText(url).then(function(){
+      LT.toast('Profile link copied.', 'good');
+    }).catch(function(){ LT.toast(url); });
+  }
+
+  load().then(function(){
+    if (location.hash === '#review' && $('review')){
+      $('review').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}).catch(function(e){ if (!e || !e.redirecting) console.error(e); });
+</script>
+</body>
+</html>

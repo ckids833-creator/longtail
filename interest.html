@@ -186,7 +186,7 @@ LT.start('interest').then(function(account){
     var near = LT.guidesNear(p.lat, p.lng, 45);
     var live = near.filter(function(g){ return g.live; }).length;
     var faces = near.slice(0,3).map(function(g){
-      return '<span class="avatar" style="' + LT.avatarStyle(g.hue) + '">' + LT.esc(g.initial) + '</span>';
+      return LT.avatar(g);
     }).join('');
 
     return '<button class="pcard glass-hover reveal" data-p="' + p.id + '" type="button" ' +
@@ -266,8 +266,7 @@ LT.start('interest').then(function(account){
         ? near.map(function(g){
             var demo = LT.DEMO_MODE && !g.real ? '<span class="demo-badge">demo</span>' : '';
             return '<button class="grow" data-g="' + g.id + '" type="button">' +
-              '<span class="avatar sm" style="' + LT.avatarStyle(g.hue) + '">' +
-                LT.esc(g.initial) + '</span>' +
+              LT.avatar(g, 'sm') +
               '<span class="t"><b>' + LT.esc(g.name) + ' ' + demo + '</b>' +
                 '<span>' + LT.esc(g.topic) + '</span></span>' +
               '<span class="r">' + (g.live
