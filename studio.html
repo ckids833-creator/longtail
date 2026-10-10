@@ -395,6 +395,7 @@
 <script src="config.js"></script>
 <script src="data.js"></script>
 <script src="push.js"></script>
+<script src="live.js"></script>
 <script>
 LT.start('studio').then(function(user){
   'use strict';
@@ -514,7 +515,7 @@ LT.start('studio').then(function(user){
   /* --------------------------------------------------------------- requests */
   var STATUS_LABEL = {
     requested: 'waiting on you', accepted: 'accepted', declined: 'declined',
-    live: 'walking now', done: 'finished', cancelled: 'cancelled'
+    live: 'walking now', done: 'finished', cancelled: 'cancelled', expired: 'timed out'
   };
 
   function paintBookings(list){
@@ -575,13 +576,19 @@ LT.start('studio').then(function(user){
   }
 
   function setStatus(bookingId, status){
+    answered[bookingId] = Date.now();
     LT.api('PATCH', '/api/bookings/' + bookingId, { status: status })
       .then(function(){
         LT.toast(status === 'accepted' ? 'Accepted.' : 'Declined — no explanation owed.',
                  status === 'accepted' ? 'good' : '');
+        dropFromQueue(bookingId);
         return reload();
       })
-      .catch(function(err){ LT.toast(err.message, 'bad'); });
+      .catch(function(err){
+        // 409: it moved on first (cancelled, timed out, answered elsewhere).
+        LT.toast(err.message, err.status === 409 ? '' : 'bad');
+        if (err.status === 409){ dropFromQueue(bookingId); reload(); }
+      });
   }
 
   /* --------------------------------------------------------------- insights */
@@ -946,7 +953,16 @@ LT.start('studio').then(function(user){
      which is a bigger piece of work — noted in the README.
      ========================================================= */
 
-  var POLL_MS = 15000;
+  // Requests arrive over the realtime socket the moment they are made; this
+  // poll is only the safety net for a dropped socket.
+  var POLL_MS = 30000;
+
+  /* Answered here, by id. A poll that left before an answer landed comes
+     back still listing it as waiting - which re-raised the alert for a
+     request just answered. Anything answered in the last two minutes is
+     ignored, whatever a late reply says. */
+  var answered = {};
+  var pollSeq = 0;
   var SEEN_KEY = 'lt_seen_requests';
   var BELL_KEY = 'lt_alerts_on';
   var pollTimer = null;
@@ -1040,6 +1056,7 @@ LT.start('studio').then(function(user){
     LTPush.stopRinging();
     if (!queue.length) return;
     var b = queue[0];
+    answered[b.id] = Date.now();
     $('alertAccept').disabled = true;
     LT.api('PATCH', '/api/bookings/' + b.id, { status: 'accepted' })
       .then(function(){
@@ -1047,7 +1064,10 @@ LT.start('studio').then(function(user){
         dropFromQueue(b.id);
         return reload();
       })
-      .catch(function(err){ LT.toast(err.message, 'bad'); })
+      .catch(function(err){
+        LT.toast(err.message, err.status === 409 ? '' : 'bad');
+        if (err.status === 409){ dropFromQueue(b.id); reload(); }
+      })
       .then(function(){ $('alertAccept').disabled = false; });
   };
 
@@ -1055,6 +1075,7 @@ LT.start('studio').then(function(user){
     LTPush.stopRinging();
     if (!queue.length) return;
     var b = queue[0];
+    answered[b.id] = Date.now();
     $('alertDecline').disabled = true;
     LT.api('PATCH', '/api/bookings/' + b.id, { status: 'declined' })
       .then(function(){
@@ -1063,7 +1084,10 @@ LT.start('studio').then(function(user){
         dropFromQueue(b.id);
         return reload();
       })
-      .catch(function(err){ LT.toast(err.message, 'bad'); })
+      .catch(function(err){
+        LT.toast(err.message, err.status === 409 ? '' : 'bad');
+        if (err.status === 409){ dropFromQueue(b.id); reload(); }
+      })
       .then(function(){ $('alertDecline').disabled = false; });
   };
 
@@ -1161,10 +1185,17 @@ LT.start('studio').then(function(user){
 
   /* ---- polling ---- */
   function poll(){
+    var seq = ++pollSeq;
     return LT.api('GET', '/api/guides/me/alerts')
       .then(function(res){
+        // A newer poll already spoke for the present; this one is history.
+        if (seq !== pollSeq) return res;
+        var now = Date.now();
+        Object.keys(answered).forEach(function(id){ if (now - answered[id] > 120000) delete answered[id]; });
         var known = seen();
-        var pending = (res.bookings || []).filter(function(b){ return b.status === 'requested'; });
+        var pending = (res.bookings || []).filter(function(b){
+          return b.status === 'requested' && !answered[b.id];
+        });
         var fresh = pending.filter(function(b){ return known.indexOf(b.id) === -1; });
 
         // The banner tracks everything still unanswered, so a reload does not
@@ -1235,6 +1266,19 @@ LT.start('studio').then(function(user){
   LTPush.syncToken();
   paintBell();
   startPolling();
+
+  /* Realtime: a request, a cancellation, a join - look again at once. A
+     burst of pokes becomes one read. */
+  var liveT = null;
+  if (window.LTLive) LTLive({
+    api: LT.apiBase(),
+    token: LT.auth.token,
+    body: {},
+    onChange: function(){
+      clearTimeout(liveT);
+      liveT = setTimeout(function(){ poll(); reload(); }, 150);
+    }
+  });
 
   /* ----------------------------------------------------------------- start */
   reload().then(function(){

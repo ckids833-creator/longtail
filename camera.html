@@ -470,6 +470,7 @@
 </div>
 
 <script src="config.js"></script>
+<script src="live.js"></script>
 <script>
 const LK=window.LivekitClient;
 const RATE=15, FEE=0.12;
@@ -1271,7 +1272,9 @@ window.addEventListener('beforeunload',e=>{ if(room&&secs>0){ e.preventDefault()
    and live, so a chime here would be played straight into
    the traveller's ear. Vibrate and show instead.
    ========================================================= */
-const REQ_POLL_MS = 12000;
+// Requests arrive over the realtime socket the moment they are made; this
+// poll is only the safety net for a dropped socket.
+const REQ_POLL_MS = 30000;
 const REQ_SEEN_KEY = 'lt_seen_requests';   // shared with Studio, so no double-alerting
 let reqTimer = null, reqAudio = null, reqCount = 0;
 
@@ -1404,7 +1407,18 @@ async function answerReq(status){
       body: JSON.stringify({ status })
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Could not answer that request.');
+    // 409: it moved on before we answered - they cancelled, it timed out, or
+    // another device of ours got there first. Either way, it is off this screen.
+    if (!res.ok && res.status !== 409) throw new Error(data.error || 'Could not answer that request.');
+    answered.set(b.id, Date.now());
+    if (res.status === 409){
+      reqQueue = reqQueue.filter(x => x.id !== b.id);
+      paintRequests(reqQueue.length);
+      toast(data.error || 'That request has moved on.', 4000);
+      reqShown = null;
+      showReqCard(false);
+      return;
+    }
 
     reqQueue = reqQueue.filter(x => x.id !== b.id);
     paintRequests(reqQueue.length);
@@ -1437,10 +1451,18 @@ $('reqLater').addEventListener('click', () => {
 $('reqPill').addEventListener('click', () => showReqCard(true));
 $('reqBanner').addEventListener('click', () => showReqCard(true));
 
+/* Answers given on this phone, by id. A poll that left before an answer
+   landed comes back still listing that request as waiting - which is how an
+   answered request used to pop straight back up. Anything answered here in
+   the last two minutes is ignored, whatever a late reply says. */
+const answered = new Map();
+let pollSeq = 0;
+
 async function pollRequests(){
   const root = apiRoot();
   let tok = ''; try { tok = localStorage.getItem('lt_token') || ''; } catch {}
   if (!root || !tok) return;
+  const seq = ++pollSeq;
 
   try {
     const res = await fetch(root + '/api/guides/me/alerts', {
@@ -1454,8 +1476,14 @@ async function pollRequests(){
     if (!res.ok) return;
 
     const data = await res.json();
+    // A newer poll has already answered for the present; this one is history.
+    if (seq !== pollSeq) return;
+    const now = Date.now();
+    answered.forEach((t, id) => { if (now - t > 120000) answered.delete(id); });
     // The server sends newest first; answer them in the order they arrived.
-    const pending = (data.bookings || []).filter(b => b.status === 'requested').reverse();
+    const pending = (data.bookings || [])
+      .filter(b => b.status === 'requested' && !answered.has(b.id))
+      .reverse();
     const known = reqSeen();
     const fresh = pending.filter(b => known.indexOf(b.id) === -1);
 
@@ -1483,6 +1511,19 @@ function startRequestWatch(){
   reqTimer = setInterval(pollRequests, REQ_POLL_MS);
 }
 
+/* Realtime: the moment someone asks, cancels, or joins, look again. Many
+   pokes in a burst become one read. */
+let liveHub = null, liveT = null;
+function startLive(){
+  if (liveHub || !window.LTLive) return;
+  liveHub = LTLive({
+    api: apiRoot(),
+    token: () => { try { return localStorage.getItem('lt_token') || ''; } catch { return ''; } },
+    body: {},
+    onChange: () => { clearTimeout(liveT); liveT = setTimeout(pollRequests, 120); }
+  });
+}
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden){
     if (reqTimer){ clearInterval(reqTimer); reqTimer = null; }
@@ -1492,6 +1533,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 startRequestWatch();
+startLive();
 
 </script>
 </body>

@@ -411,6 +411,7 @@
 </div>
 
 <script src="config.js"></script>
+<script src="live.js"></script>
 <script>
 const LK=window.LivekitClient;
 let room=null, secs=0, timerInt=null, micOn=true;
@@ -466,6 +467,7 @@ const COPY={
   ready:    n=>[n+' is walking now', 'Tap to join. Allow your microphone so you can talk to them — your camera stays off.'],
   declined: n=>[n+' can’t take this one', 'Nothing was charged and nothing is held. Plenty of others are walking.'],
   cancelled:n=>['Request cancelled', 'Nothing was charged and nothing is held.'],
+  expired:  n=>['That request timed out', 'You were away a while, so it lapsed. Nothing was charged — ask '+n+' again.'],
   done:     n=>['Your walk with '+n+' is over', 'Thanks for walking. How was it?']
 };
 // The step being waited on: accepted means steps 1-2 are done, walking is next.
@@ -480,8 +482,8 @@ function paintFace(state){
   const f=$('face');
   // is-* names: the live view already uses .waiting for its loading overlay.
   f.className='face'+(state==='waiting'?' is-waiting':'')+(state==='ready'?' is-ready':'')+
-    (['accepted','busy','ready','done'].includes(state)?' is-ok':'')+(['declined','cancelled'].includes(state)?' is-no':'');
-  $('faceBadge').textContent=['declined','cancelled'].includes(state)?'✕':'✓';
+    (['accepted','busy','ready','done'].includes(state)?' is-ok':'')+(['declined','cancelled','expired'].includes(state)?' is-no':'');
+  $('faceBadge').textContent=['declined','cancelled','expired'].includes(state)?'✕':'✓';
 }
 
 function paint(d){
@@ -513,8 +515,9 @@ function paint(d){
   $('btnCancel').hidden=!['waiting','accepted','busy'].includes(STATE);
 
   const alt=$('btnAlt');
-  alt.hidden=!['declined','cancelled','done'].includes(STATE);
-  if(STATE==='done'&&!d.reviewed){ alt.textContent='Rate your walk ★'; alt.href='guide.html?id='+encodeURIComponent(guideId)+'#review'; alt.className='btn'; }
+  alt.hidden=!['declined','cancelled','done','expired'].includes(STATE);
+  if(STATE==='expired'){ alt.textContent='Ask '+n+' again'; alt.href='explore.html?guide='+encodeURIComponent(guideId); alt.className='btn'; }
+  else if(STATE==='done'&&!d.reviewed){ alt.textContent='Rate your walk ★'; alt.href='guide.html?id='+encodeURIComponent(guideId)+'#review'; alt.className='btn'; }
   else if(STATE==='done'){ alt.textContent='Back to the map'; alt.href='explore.html'; alt.className='btn quiet'; }
   else { alt.textContent='Find another guide'; alt.href='explore.html'; alt.className='btn'; }
 
@@ -546,11 +549,29 @@ async function refresh(){
   return d;
 }
 
-/* Poll quickly while something is about to happen, and stop once it has. */
+/* Changes arrive over the realtime socket the moment they happen; this poll
+   is the safety net, and it is also how the server knows you are still here
+   (a request nobody is waiting on times out). Stops once there is nothing
+   left to wait for. */
 function schedule(){
   clearTimeout(pollT);
   if(joined||!['waiting','accepted','busy','ready'].includes(STATE)) return;
-  pollT=setTimeout(()=>refresh().catch(e=>showErr(e.message)).then(schedule), STATE==='ready'?6000:3000);
+  pollT=setTimeout(()=>refresh().catch(e=>showErr(e.message)).then(schedule), hub&&hub.connected?12000:4000);
+}
+
+/* Realtime: the guide answers, starts walking, or frees the seat - this page
+   moves on that instant. A burst of pokes becomes one read. */
+let hub=null, hubT=null;
+function startHub(){
+  if(hub||!window.LTLive||!BOOKING) return;
+  hub=LTLive({
+    api:API_ROOT, token:authToken, body:{booking_id:BOOKING},
+    onChange:()=>{
+      if(joined) return;
+      clearTimeout(hubT);
+      hubT=setTimeout(()=>refresh().catch(()=>{}).then(schedule),100);
+    }
+  });
 }
 
 async function bookingForRoom(code){
@@ -582,6 +603,7 @@ async function boot(){
     }
     if(!BOOKING) return noRequest();
     await refresh();
+    startHub();
     schedule();
   }catch(e){
     if(e.status===404||e.status===403){ $('stTitle').textContent='That request isn’t yours'; $('stSub').textContent='Open it from My walks.'; return; }
@@ -627,6 +649,8 @@ async function join(){
     wire();
     await room.connect(data.url,data.token);
     joined=true;
+    // In the walk now: LiveKit carries what happens next.
+    if(hub){ hub.stop(); hub=null; }
     try{ await room.localParticipant.setMicrophoneEnabled(true); }
     catch{ micOn=false; paintMic(); toast('No microphone — use the chat instead'); }
 
