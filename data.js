@@ -42,8 +42,10 @@ var LT = (function () {
     [103.90,18.30],[104.35,17.85],[104.75,17.45],[104.80,16.90],[105.05,16.55],
     [105.40,16.00],[105.55,15.55],[105.60,15.35],[105.20,14.90],[104.70,14.40],
     [104.20,14.35],[103.60,14.40],[103.15,14.35],[102.60,13.90],[102.35,13.55],
-    [102.55,12.60],[102.35,12.25],[102.90,11.75],[102.30,12.40],[101.70,12.60],
-    [101.00,12.60],[100.90,13.40],[100.55,13.50],[100.00,13.50],[99.95,13.10],
+    [102.55,12.60],[102.78,12.10],[102.92,11.65],[102.62,11.95],[102.45,12.18],
+    [102.10,12.45],[101.70,12.60],
+    [101.25,12.66],[100.92,12.66],[100.86,12.93],[100.92,13.17],[100.93,13.40],
+    [100.55,13.50],[100.00,13.50],[99.95,13.10],
     [100.05,12.60],[99.95,12.20],[99.60,11.60],[99.35,10.90],[99.20,10.30],
     [99.50,9.90],[99.90,9.40],[100.05,8.90],[100.20,8.40],[100.40,7.90],
     [100.60,7.40],[100.85,6.85],[101.40,6.55],[101.85,6.45],[101.50,6.25],
@@ -56,18 +58,91 @@ var LT = (function () {
     [98.25,19.75],[98.90,19.80],[99.05,20.10],[99.50,20.35],[100.10,20.45]
   ];
 
+  /* The islands the mainland outline leaves out, roughly. Without them a walk
+     on Phuket or Koh Samui would count as being outside Thailand. */
+  var THAILAND_ISLANDS = [
+    [[98.30,8.20],[98.46,8.12],[98.45,7.86],[98.36,7.74],[98.27,7.84],[98.25,8.05],[98.30,8.20]],  // Phuket
+    [[99.93,9.58],[100.08,9.59],[100.10,9.45],[99.98,9.40],[99.91,9.48],[99.93,9.58]],             // Koh Samui
+    [[99.96,9.80],[100.07,9.79],[100.08,9.69],[99.99,9.67],[99.95,9.73],[99.96,9.80]],              // Koh Phangan
+    [[99.81,10.13],[99.86,10.12],[99.86,10.06],[99.82,10.05],[99.81,10.13]],                        // Koh Tao
+    [[99.03,7.66],[99.09,7.68],[99.12,7.55],[99.08,7.45],[99.03,7.50],[99.03,7.66]],                // Koh Lanta
+    [[98.72,7.79],[98.80,7.78],[98.79,7.66],[98.73,7.67],[98.72,7.79]],                             // Phi Phi
+    [[102.27,12.17],[102.38,12.16],[102.40,12.00],[102.30,11.97],[102.27,12.17]],                   // Koh Chang
+    [[102.50,11.75],[102.60,11.74],[102.60,11.60],[102.52,11.60],[102.50,11.75]],                   // Koh Kood
+    [[99.62,6.72],[99.70,6.71],[99.69,6.53],[99.62,6.55],[99.62,6.72]],                             // Tarutao
+    [[99.27,6.51],[99.32,6.51],[99.32,6.47],[99.27,6.47],[99.27,6.51]]                              // Koh Lipe
+  ];
+  var THAILAND_RINGS = [THAILAND_RING].concat(THAILAND_ISLANDS);
+
   var THAILAND_GEOJSON = {
     type: 'FeatureCollection',
     features: [{
       type: 'Feature',
       properties: { name: 'Thailand' },
-      geometry: { type: 'Polygon', coordinates: [THAILAND_RING] }
+      geometry: { type: 'MultiPolygon', coordinates: THAILAND_RINGS.map(function(r){ return [r]; }) }
     }]
   };
 
-  // generous box — the camera is kept inside this once you land
-  var THAILAND_BOUNDS = [[96.2, 4.6], [107.0, 21.4]];
+  /* Everything that is not Thailand, as one polygon with Thailand cut out of
+     it: the map lays this over the rest of the world to dim it. */
+  var OUTSIDE_THAILAND_GEOJSON = {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'Polygon', coordinates: [[[-180,-85],[180,-85],[180,85],[-180,85],[-180,-85]]].concat(THAILAND_RINGS) }
+  };
+
+  // Thailand's own extent: the camera frames this, and never zooms out past it.
+  var THAILAND_BOUNDS = [[97.3, 5.6], [105.7, 20.5]];
   var THAILAND_CENTER = [101.0, 13.4];
+
+  /* ---- is this place in Thailand? ----
+     Against a simplified outline, so slackKm forgives the outline's rough
+     edges: a pin on a real border town, or a beach the outline cuts off. */
+  function inRing(x, y, ring){
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++){
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  /** Nearest point on any outline to (x, y), and how far away it is in km. */
+  function nearestEdge(x, y){
+    // Flat-earth km per degree here: plenty accurate over tens of kilometres.
+    var kx = 111.32 * Math.cos(y * Math.PI / 180), ky = 110.57;
+    var best = { km: Infinity, lng: x, lat: y };
+    THAILAND_RINGS.forEach(function(ring){
+      for (var i = 0; i < ring.length - 1; i++){
+        var ax = (ring[i][0] - x) * kx, ay = (ring[i][1] - y) * ky;
+        var dx = (ring[i+1][0] - ring[i][0]) * kx, dy = (ring[i+1][1] - ring[i][1]) * ky;
+        var t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / ((dx * dx + dy * dy) || 1)));
+        var px = ax + t * dx, py = ay + t * dy, km = Math.hypot(px, py);
+        if (km < best.km) best = { km: km, lng: x + px / kx, lat: y + py / ky };
+      }
+    });
+    return best;
+  }
+
+  function inThailand(lng, lat, slackKm){
+    for (var i = 0; i < THAILAND_RINGS.length; i++){
+      if (inRing(lng, lat, THAILAND_RINGS[i])) return true;
+    }
+    return slackKm > 0 && nearestEdge(lng, lat).km <= slackKm;
+  }
+
+  /**
+   * Keep a point within slackKm of Thailand. A point further out is pulled
+   * straight back to that distance - not to the border itself, so dragging
+   * the map slides along the edge smoothly instead of snapping.
+   */
+  function clampToThailand(lng, lat, slackKm){
+    if (inThailand(lng, lat, 0)) return null;
+    var n = nearestEdge(lng, lat);
+    if (n.km <= slackKm) return null;
+    var f = slackKm / n.km;
+    return [n.lng + (lng - n.lng) * f, n.lat + (lat - n.lat) * f];
+  }
 
   /* ------------------------------------------------------------
      Guides. rate is baht per minute. room is the LiveKit walk code
@@ -884,6 +959,8 @@ var LT = (function () {
     THAILAND_GEOJSON: THAILAND_GEOJSON,
     THAILAND_BOUNDS: THAILAND_BOUNDS,
     THAILAND_CENTER: THAILAND_CENTER,
+    OUTSIDE_THAILAND_GEOJSON: OUTSIDE_THAILAND_GEOJSON,
+    inThailand: inThailand, clampToThailand: clampToThailand,
     guide: guide, place: place, liveGuides: liveGuides, guidesNear: guidesNear,
     distKm: distKm, baht: baht, validCode: validCode, watchUrl: watchUrl, walkUrl: walkUrl,
     search: search, avatarStyle: avatarStyle, esc: esc,

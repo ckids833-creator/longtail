@@ -41,9 +41,14 @@
   @keyframes twinkle{from{opacity:.5;}to{opacity:.95;}}
 
   /* ---------- map markers ---------- */
-  .pin{cursor:pointer;position:relative;width:36px;height:36px;display:grid;place-items:center;
-    transition:transform .35s var(--ease-out);}
-  .pin:hover{transform:scale(1.18);z-index:5;}
+  /* The map positions each pin with position:absolute and a transform of its
+     own. position:relative here stacked the pins down the page instead, and
+     scaling the pin on hover replaced the map's transform - so pins sat in the
+     sea, or jumped to a corner. Size and hover live on the inner parts. */
+  .pin{cursor:pointer;width:36px;height:36px;display:grid;place-items:center;}
+  .pin:hover{z-index:5;}
+  .pin .dot{transition:transform .35s var(--ease-out);}
+  .pin:hover .dot{transform:scale(1.25);}
   .pin .dot{
     width:15px;height:15px;border-radius:50%;
     background:linear-gradient(140deg,var(--green-soft),var(--green-deep));
@@ -68,11 +73,6 @@
   .mapctl{position:fixed;top:calc(var(--nav-h) + 14px);right:14px;z-index:40;
     display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
   .mapctl .btn{padding:11px 16px;font-size:13px;}
-  .viewtoggle{display:flex;padding:4px;border-radius:999px;gap:2px;}
-  .viewtoggle button{padding:8px 14px;border-radius:999px;font-size:12px;font-weight:600;
-    color:var(--dim);transition:all .3s var(--ease);}
-  .viewtoggle button.on{background:rgba(87,211,146,.18);color:var(--green-soft);
-    box-shadow:inset 0 0 0 1px rgba(87,211,146,.35);}
 
   /* ---------- hero copy, fades out once you land ---------- */
   .hero{position:fixed;left:clamp(16px,4vw,46px);top:calc(var(--nav-h) + 8vh);z-index:20;
@@ -225,10 +225,6 @@
 
 <!-- map controls -->
 <div class="mapctl">
-  <div class="viewtoggle glass">
-    <button id="vGlobe" type="button">From space</button>
-    <button id="vLand" class="on" type="button">Thailand</button>
-  </div>
   <button class="btn btn-glass" id="hereBtn" type="button">◎ Live guides on map</button>
 </div>
 
@@ -322,10 +318,24 @@ LT.start('explore').then(function(account){
     var el = $('map');
     if (el) el.style.background =
       'radial-gradient(circle at 50% 45%, #0f2a20 0%, #071110 46%, #04070A 74%)';
-    LT.toast(msg + ' Search and Join with code still work.', 'bad');
+    LT.toast(msg + ' Search still works.', 'bad');
   }
 
+  /* Thailand only. The arrival flies in from space, and nobody can steer the
+     globe somewhere else on the way: input is off until the camera lands,
+     and a tap just lands it sooner. After that the camera's centre cannot
+     leave Thailand, it cannot zoom out past the country, the rest of the
+     world is dimmed, and a tap outside Thailand does nothing but say so. */
+  var HANDLERS = ['dragPan', 'scrollZoom', 'boxZoom', 'keyboard', 'doubleClickZoom', 'touchZoomRotate'];
+  function setInput(on){
+    HANDLERS.forEach(function(h){ if (map[h]) map[h][on ? 'enable' : 'disable'](); });
+  }
+  /** Is this somewhere a pin may sit? A little slack for the outline's rough edges. */
+  function onMap(g){ return LT.inThailand(g.lng, g.lat, 15); }
+
   if (map) {
+    setInput(false);
+    map.getCanvasContainer().addEventListener('pointerdown', function(){ if (!landed) land(true); });
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     map.on('error', function(e){
       // style/tile failures should not take the page down
@@ -360,6 +370,13 @@ LT.start('explore').then(function(account){
       });
     });
 
+    // Everywhere else, dimmed: it is on the map for context, not to visit.
+    attempt('outside mask', function(){
+      map.addSource('outside', { type:'geojson', data: LT.OUTSIDE_THAILAND_GEOJSON });
+      map.addLayer({ id:'outside', type:'fill', source:'outside',
+        paint:{ 'fill-color':'#04070A', 'fill-opacity':0.66 } });
+    });
+
     // Thailand highlight
     attempt('country outline', function(){
       map.addSource('th', { type:'geojson', data: LT.THAILAND_GEOJSON });
@@ -383,15 +400,61 @@ LT.start('explore').then(function(account){
     setTimeout(land, 6000); // belt and braces if moveend never fires
   }
 
-  function land(){
+  // now === true: skip the rest of the arrival (a tap, or a pin opened mid-flight).
+  // Called from 'moveend' it gets an event object, which is not a skip.
+  function land(now){
     if (landed) return;
     landed = true;
+    now = now === true;
     $('hero').classList.add('gone');
+    if (now) map.jumpTo({ center: LT.THAILAND_CENTER, zoom: 5.15 });
     // From here on, the camera stays over Thailand.
-    map.setMaxBounds(LT.THAILAND_BOUNDS);
-    map.setMinZoom(4.4);
-    setView('land');
+    fitFloor();
+    map.transformCameraUpdate = keepOverThailand;
+    setInput(true);
+    if (!now) map.flyTo({ center: LT.THAILAND_CENTER, zoom: Math.max(map.getZoom(), map.getMinZoom()) });
   }
+
+  /* Every camera move - a drag, a pinch, a fly-to - passes through here.
+     Two rules. The screen stays framed on Thailand's extent: zoomed out, you
+     cannot slide sideways into a neighbour; zoomed in, you can go right up
+     to the border. And the centre never sits over another country, even
+     zoomed in on a border town, beyond a little slack for the outline. */
+  var VIEW = [[96.6, 5.0], [106.4, 21.0]];   // Thailand, plus a little sea and border
+  function within(v, lo, hi){ return lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)); }
+  function keepOverThailand(next){
+    var lng = next.center.lng, lat = next.center.lat, slack = 30;
+    try {
+      var b = next.getBounds();
+      var hw = (b.getEast() - b.getWest()) / 2, hh = (b.getNorth() - b.getSouth()) / 2;
+      lng = within(lng, VIEW[0][0] + hw, VIEW[1][0] - hw);
+      lat = within(lat, VIEW[0][1] + hh, VIEW[1][1] - hh);
+      // How far past the border the centre may go scales with the view: wide
+      // enough zoomed out to pan across the sea to the islands, a couple of
+      // kilometres zoomed in, so a border never fills the screen.
+      var hwKm = hw * 111.32 * Math.cos(lat * Math.PI / 180);
+      slack = Math.max(2, Math.min(30, hwKm * 0.1));
+    } catch (e) { /* an older map without getBounds: the centre rule still holds */ }
+    var c = LT.clampToThailand(lng, lat, slack);
+    if (c) { lng = c[0]; lat = c[1]; }
+    return (lng !== next.center.lng || lat !== next.center.lat)
+      ? { center: new maplibregl.LngLat(lng, lat) } : {};
+  }
+
+  /* The furthest you can zoom out is "all of Thailand on this screen", worked
+     out per screen: a phone and a wide monitor need different numbers. */
+  function fitFloor(){
+    var cam = map.cameraForBounds(LT.THAILAND_BOUNDS, { padding: 24 });
+    map.setMinZoom(Math.max(3, (cam && cam.zoom ? cam.zoom : 4.4) - 0.25));
+  }
+  window.addEventListener('resize', function(){ if (map && landed) fitFloor(); });
+
+  if (map) map.on('click', function(e){
+    if (!landed) return;
+    if (!LT.inThailand(e.lngLat.lng, e.lngLat.lat, 8)) {
+      LT.toast('Longtail walks are in Thailand only.');
+    }
+  });
 
   var markerById = {};
 
@@ -399,7 +462,7 @@ LT.start('explore').then(function(account){
     markers.forEach(function(m){ m.remove(); });
     markers = [];
     markerById = {};
-    LT.GUIDES.forEach(function(g){
+    LT.GUIDES.filter(onMap).forEach(function(g){
       var el = document.createElement('div');
       el.className = 'pin ' + (g.live ? 'live' : 'offline');
       el.setAttribute('role','button');
@@ -433,7 +496,7 @@ LT.start('explore').then(function(account){
       });
       // Someone who stopped walking leaves the globe immediately.
       var vanished = Object.keys(markerById).filter(function(id){ return !seen[id]; });
-      if (vanished.length || LT.GUIDES.some(function(g){ return !markerById[g.id]; })) {
+      if (vanished.length || LT.GUIDES.some(function(g){ return onMap(g) && !markerById[g.id]; })) {
         addMarkers();
         if (drawerOpen()) renderDrawer();
       }
@@ -444,39 +507,17 @@ LT.start('explore').then(function(account){
 
   function flyToPoint(lng, lat, zoom){
     if (!map) return;
-    if (!landed) land();
+    if (!landed) land(true);
+    // Somewhere outside Thailand is not a place this map goes.
+    if (!LT.inThailand(lng, lat, 15)) return;
     map.flyTo({ center:[lng,lat], zoom: zoom || 12.4, speed: 0.85, curve: 1.5, essential: true });
   }
 
-  /* view toggle: space <-> Thailand */
-  function setView(mode){
-    $('vGlobe').classList.toggle('on', mode === 'globe');
-    $('vLand').classList.toggle('on', mode === 'land');
-    if (!map) return;
-    if (mode === 'globe'){
-      map.setMaxBounds(null);
-      map.setMinZoom(0);
-      map.flyTo({ center: LT.THAILAND_CENTER, zoom: 1.35, speed: 0.7, curve: 1.4, essential:true });
-      $('hero').classList.remove('gone');
-    } else {
-      $('hero').classList.add('gone');
-      map.setMinZoom(0);
-      map.setMaxBounds(null);
-      map.flyTo({ center: LT.THAILAND_CENTER, zoom: 5.15, speed: 0.8, curve: 1.4, essential:true });
-      map.once('moveend', function(){
-        map.setMaxBounds(LT.THAILAND_BOUNDS);
-        map.setMinZoom(4.4);
-      });
-    }
-  }
-  $('vGlobe').onclick = function(){ landed = true; setView('globe'); };
-  $('vLand').onclick  = function(){ landed = true; setView('land'); };
-
   $('hereBtn').onclick = function(){
-    var live = LT.liveGuides();
+    var live = LT.liveGuides().filter(onMap);
     if (!live.length) { LT.toast('Nobody is walking right now.'); return; }
     if (!map) return;
-    if (!landed) land();
+    if (!landed) land(true);
     var b = new maplibregl.LngLatBounds();
     live.forEach(function(g){ b.extend([g.lng, g.lat]); });
     map.fitBounds(b, { padding:{ top:150, bottom:230, left:80, right:80 }, maxZoom:11, duration:1800 });
