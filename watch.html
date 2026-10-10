@@ -7,7 +7,6 @@
 <meta name="robots" content="noindex">
 <title>Watch live in Bangkok</title>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -74,7 +73,18 @@
   .err{background:rgba(210,71,43,.12);border:1px solid rgba(210,71,43,.4);border-radius:11px;padding:13px 15px;font-size:13px;line-height:1.55;margin-top:14px;display:none;}
   .err.on{display:block;}
 
-  #live{display:none;position:fixed;inset:0;background:#000;overflow:hidden;}
+  /* ======================= the walk, as the traveller sees it =======================
+     The picture is the product. Everything else is a few soft, round, glassy
+     things floating over it, with as few words as possible - and they get out
+     of the way when nobody is touching the screen. */
+  @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  #live{display:none;position:fixed;inset:0;background:#000;overflow:hidden;
+    --glass:radial-gradient(120% 120% at 30% 18%,rgba(255,255,255,.30),rgba(255,255,255,.09) 46%,rgba(18,22,24,.38));
+    --glass-edge:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -10px 18px rgba(0,0,0,.16),0 14px 30px -12px rgba(0,0,0,.7);
+    --cream:#FBF6EC; --spring:cubic-bezier(.2,.9,.3,1.35);
+    -webkit-user-select:none;user-select:none;}
   #live.on{display:block;}
   /* object-fit:cover was cropping and upscaling the frame — on a wide screen a
      540p portrait stream got blown up well past its real pixels and looked
@@ -89,83 +99,189 @@
   #remoteBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
     filter:blur(18px) brightness(.45) saturate(1.2);transform:scale(1.12);
     z-index:0;pointer-events:none;}
-  .pill b.weak{color:var(--chili);}
-  .soundBtn{position:absolute;z-index:11;left:50%;top:42%;transform:translate(-50%,-50%);
-    display:none;align-items:center;gap:9px;padding:16px 24px;border-radius:999px;
-    background:var(--saffron);color:var(--ink);font-weight:700;font-size:16px;
-    box-shadow:0 18px 40px -14px rgba(0,0,0,.9);}
-  .soundBtn.on{display:flex;}
-  .soundBtn i{font-size:21px;}
-  .top{position:absolute;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;padding:calc(13px + env(safe-area-inset-top)) 14px 0;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
-  .livedot{display:flex;align-items:center;gap:6px;background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:999px;padding:7px 12px 7px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;}
-  .livedot i{width:6px;height:6px;border-radius:50%;background:#ff5a4e;animation:pd 1.4s infinite;}
-  @keyframes pd{0%{box-shadow:0 0 0 0 rgba(255,90,78,.6);}70%{box-shadow:0 0 0 8px rgba(255,90,78,0);}100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}}
-  .pill{background:rgba(10,15,17,.6);backdrop-filter:blur(6px);border-radius:10px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.04em;}
-  .pill b{display:block;font-size:15px;color:var(--saffron);margin-top:2px;}
+  /* soft light at the edges so white controls read on a white sky */
+  .vignette{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 22%,transparent 58%,rgba(0,0,0,.55));}
 
-  .breakOverlay,.endedOverlay{position:absolute;inset:0;z-index:10;display:none;
-    flex-direction:column;align-items:center;justify-content:center;gap:13px;
-    text-align:center;padding:30px;background:rgba(8,12,14,.94);backdrop-filter:blur(10px);}
-  .breakOverlay.on,.endedOverlay.on{display:flex;}
-  .breakOverlay i,.endedOverlay i{font-size:46px;color:var(--saffron);}
-  .breakOverlay h2,.endedOverlay h2{font-family:'Big Shoulders Display',sans-serif;
-    font-weight:800;text-transform:uppercase;font-size:25px;line-height:1.05;max-width:20ch;}
-  .breakOverlay p,.endedOverlay p{font-size:13.5px;color:var(--dim);line-height:1.6;max-width:30ch;}
-  .endedBtn{display:flex;align-items:center;gap:8px;margin-top:8px;background:var(--saffron);
-    color:var(--ink);border-radius:12px;padding:14px 22px;font-weight:700;font-size:15px;
-    text-decoration:none;}
-  .endedBtn.ghost{background:transparent;color:var(--dim);border:1px solid rgba(239,231,216,.2);margin-top:0;}
+  .ic{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;
+    filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.35));}
+  .ic.fill{fill:currentColor;stroke:none;}
 
-  .waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;z-index:4;background:rgba(0,0,0,.5);}
-  .waiting.hide{display:none;}
-  .spinner{width:34px;height:34px;border:3px solid rgba(239,231,216,.15);border-top-color:var(--saffron);border-radius:50%;animation:sp .9s linear infinite;}
-  @keyframes sp{to{transform:rotate(360deg);}}
-  .waiting p{font-size:14.5px;color:var(--paper);line-height:1.6;max-width:26ch;}
-  .waiting .sub{font-size:12.5px;color:var(--dim);}
+  /* things that hide when you stop touching the screen */
+  .chrome{transition:opacity .45s ease,transform .45s ease;}
+  #live.calm .chrome{opacity:0;pointer-events:none;}
+  #live.calm .top-chrome{transform:translateY(-10px);}
+  #live.calm .low-chrome{transform:translateY(12px);}
 
-  .sent{position:absolute;left:50%;transform:translateX(-50%);bottom:190px;z-index:7;background:rgba(232,163,61,.95);color:var(--ink);border-radius:14px;padding:12px 18px;font-size:14px;font-weight:700;display:none;max-width:82vw;text-align:center;}
-  .sent.on{display:block;animation:pop .25s ease-out;}
-  @keyframes pop{from{transform:translateX(-50%) scale(.94);opacity:0;}to{transform:translateX(-50%) scale(1);opacity:1;}}
+  /* ---- the round glass buttons ---- */
+  .orb{position:relative;width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;
+    color:var(--cream);background:var(--glass);box-shadow:var(--glass-edge);border:1px solid rgba(255,255,255,.16);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);
+    transition:transform .22s var(--spring),background .2s;}
+  .orb:active{transform:scale(.88);}
+  .orb::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(255,212,138,.9);
+    opacity:0;transform:scale(.8);pointer-events:none;}
+  .orb.ping::after{animation:ring .6s ease-out;}
+  @keyframes ring{0%{opacity:.9;transform:scale(.85);}100%{opacity:0;transform:scale(1.55);}}
+  .orb.big{width:68px;height:68px;color:#2A1804;
+    background:radial-gradient(120% 120% at 30% 18%,#FFE2A8,#F0AE48 48%,#C9761E);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -10px 18px rgba(120,60,0,.25),0 16px 34px -12px rgba(232,163,61,.65);
+    animation:breathe 3.6s ease-in-out infinite;}
+  .orb.big .ic{width:30px;height:30px;filter:none;}
+  @keyframes breathe{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -10px 18px rgba(120,60,0,.25),0 16px 34px -12px rgba(232,163,61,.55);}
+    50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -10px 18px rgba(120,60,0,.25),0 16px 44px -8px rgba(232,163,61,.85);}}
+  .orb.sm{width:42px;height:42px;}
+  .orb.sm .ic{width:21px;height:21px;}
+  .orb.off{color:#FF9B89;background:radial-gradient(120% 120% at 30% 18%,rgba(255,140,120,.35),rgba(210,71,43,.28) 50%,rgba(40,14,10,.5));}
+  .orb .lab{position:absolute;top:calc(100% + 7px);left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-size:11px;font-weight:600;color:rgba(251,246,236,.85);text-shadow:0 1px 3px rgba(0,0,0,.6);
+    transition:opacity .6s ease;}
+  /* Labels teach the icons for the first few seconds, then step aside. */
+  #live.learned .orb .lab{opacity:0;}
+  .dot{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+    background:#FF5A4E;color:#fff;font-size:10.5px;font-weight:700;display:none;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px rgba(0,0,0,.35);}
+  .dot.on{display:flex;}
 
-  .bottom{position:absolute;left:0;right:0;bottom:0;z-index:8;padding:14px 14px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);display:flex;flex-direction:column;gap:10px;}
-  .presets{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
-  .preset{background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:999px;padding:10px 15px;font-size:13px;}
-  .preset:active{background:rgba(239,231,216,.22);}
-  .composer{display:flex;gap:8px;}
-  .composer input{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:12px;padding:14px 15px;color:var(--paper);font-size:15px;}
-  .composer input:focus{outline:none;border-color:var(--saffron);}
-  .composer button{background:var(--saffron);color:var(--ink);border-radius:12px;padding:0 20px;font-weight:700;font-size:14px;}
-  .ctrls{display:flex;gap:8px;}
-  .ctrl{flex:1;background:rgba(10,15,17,.62);backdrop-filter:blur(6px);border:1px solid rgba(239,231,216,.22);border-radius:11px;padding:13px 0;font-size:12.5px;font-weight:600;text-align:center;}
-  .ctrl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    line-height:1;}
-  .ctrl i{font-size:21px;line-height:1;}
-  .ctrl span{font-size:10.5px;font-weight:600;}
+  /* ---- top: who you are walking with ---- */
+  .gchip{position:absolute;z-index:8;top:calc(12px + env(safe-area-inset-top));left:12px;
+    display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:999px;color:var(--cream);
+    background:rgba(16,20,22,.38);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);
+    border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 26px -14px rgba(0,0,0,.8);}
+  .gav{position:relative;width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;
+    font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:17px;color:#12181B;
+    box-shadow:0 0 0 2px #FF5A4E;}
+  .gav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .gchip .t{display:flex;flex-direction:column;line-height:1.15;}
+  .gchip .t b{font-size:14px;font-weight:650;letter-spacing:.01em;}
+  .gchip .t span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:rgba(251,246,236,.75);
+    font-variant-numeric:tabular-nums;}
+  .rec{width:6px;height:6px;border-radius:50%;background:#FF5A4E;animation:pd 1.6s infinite;}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:12px;margin-left:2px;}
+  .bars i{width:3px;border-radius:2px;background:rgba(251,246,236,.9);}
+  .bars i:nth-child(1){height:5px;} .bars i:nth-child(2){height:8px;} .bars i:nth-child(3){height:12px;}
+  .bars.weak i:nth-child(2),.bars.weak i:nth-child(3){background:rgba(251,246,236,.25);}
+  .bars.weak i:nth-child(1){background:#FFB15A;}
+  #cClose{position:absolute;z-index:8;top:calc(12px + env(safe-area-inset-top));right:12px;}
 
-  .ctrl.off{color:var(--chili);border-color:rgba(210,71,43,.5);}
-  .ctrl.leave{background:var(--chili);color:var(--paper);border-color:transparent;}
-  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:14;background:rgba(10,15,17,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:12.5px;display:none;max-width:88vw;text-align:center;}
-  .toast.on{display:block;}
-  .ctrl{position:relative;}
-  .badge{position:absolute;top:-5px;right:-3px;background:var(--signal);color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 5px;}
-  .badge.on{display:flex;}
-  .bottom.hide{display:none;}
-  .chatPanel{position:absolute;left:0;right:0;bottom:0;z-index:12;background:rgba(12,17,19,.97);backdrop-filter:blur(12px);border-radius:20px 20px 0 0;border-top:1px solid var(--line);display:none;flex-direction:column;max-height:76%;}
-  .chatPanel.on{display:flex;}
-  .chatHead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px 10px;border-bottom:1px solid var(--line);}
-  .chatHead h3{font-family:'Big Shoulders Display',sans-serif;font-weight:800;text-transform:uppercase;font-size:16px;}
-  .chatHead button{font-size:24px;color:var(--dim);padding:0 4px;line-height:1;}
-  .chatBody{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
-  .msg{max-width:82%;font-size:14px;line-height:1.45;padding:10px 13px;border-radius:15px;word-break:break-word;}
-  .msg.them{background:var(--ink-3);align-self:flex-start;border-bottom-left-radius:4px;}
-  .msg.me{background:var(--saffron);color:var(--ink);align-self:flex-end;border-bottom-right-radius:4px;font-weight:500;}
-  .msg .t{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.5;margin-top:4px;}
-  .chatEmpty{text-align:center;color:var(--faint);font-size:12.5px;line-height:1.6;padding:26px 10px;}
-  .chatFoot{display:flex;gap:8px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
-  .chatFoot input{flex:1;background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;color:var(--paper);font-size:16px;}
-  .chatFoot input:focus{outline:none;border-color:var(--saffron);}
-  .chatFoot button{background:var(--saffron);color:var(--ink);border-radius:12px;padding:0 19px;font-weight:700;font-size:14px;}
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+  /* ---- right rail: heart, chat, mic ---- */
+  .rail{position:absolute;z-index:8;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:12px;align-items:center;}
+  #cHeart{color:#FF6B7E;}
+
+  /* ---- the steering dock ---- */
+  .dock{position:absolute;z-index:8;left:0;right:0;bottom:calc(30px + env(safe-area-inset-bottom));
+    display:flex;justify-content:center;align-items:center;gap:12px;padding:0 12px;}
+  @media (max-width:360px){ .dock{gap:8px;} .dock .orb{width:48px;height:48px;} .dock .orb.big{width:60px;height:60px;} }
+
+  /* ---- floating feed: what the guide says, and gentle hints ---- */
+  .feed{position:absolute;z-index:7;left:12px;right:84px;bottom:calc(128px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none;}
+  .bub{display:flex;align-items:flex-start;gap:8px;max-width:100%;padding:9px 13px 9px 9px;border-radius:18px 18px 18px 6px;
+    color:var(--cream);font-size:14px;line-height:1.4;background:rgba(16,20,22,.5);
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 10px 24px -14px rgba(0,0,0,.9);pointer-events:auto;
+    animation:bubIn .5s var(--spring) both;}
+  .bub.out{animation:bubOut .6s ease forwards;}
+  .bub .mini{width:24px;height:24px;border-radius:50%;flex:none;overflow:hidden;position:relative;display:grid;place-items:center;
+    font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:12px;color:#12181B;}
+  .bub .mini img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .bub.hint{padding:9px 13px;border-radius:18px;color:rgba(251,246,236,.9);font-size:13px;}
+  .bub.hint .ic{width:18px;height:18px;flex:none;color:#FFD48A;}
+  @keyframes bubIn{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}
+  @keyframes bubOut{to{opacity:0;transform:translateY(-10px);}}
+
+  /* ---- effects: a direction floating up, a point on the picture, hearts ---- */
+  .fx{position:absolute;z-index:9;pointer-events:none;}
+  .cap{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;white-space:nowrap;
+    background:rgba(255,226,168,.95);color:#2A1804;font-weight:700;font-size:14px;
+    box-shadow:0 12px 26px -10px rgba(0,0,0,.6);transform:translate(-50%,0);
+    animation:capUp 1.5s cubic-bezier(.2,.8,.2,1) forwards;}
+  .cap .ic{width:18px;height:18px;filter:none;}
+  @keyframes capUp{0%{opacity:0;transform:translate(-50%,10px) scale(.9);}15%{opacity:1;transform:translate(-50%,-6px) scale(1);}
+    75%{opacity:1;}100%{opacity:0;transform:translate(-50%,-64px) scale(.98);}}
+  .pt{width:0;height:0;}
+  .pt i{position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;border:2.5px solid #FFE2A8;
+    box-shadow:0 0 18px rgba(255,212,138,.6);animation:ptRing 1.4s ease-out forwards;}
+  .pt i:nth-child(2){animation-delay:.18s;}
+  .pt b{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#FFE2A8;
+    box-shadow:0 0 12px rgba(255,212,138,.9);animation:ptDot 1.6s ease-out forwards;}
+  @keyframes ptRing{0%{transform:scale(.3);opacity:1;}100%{transform:scale(2.2);opacity:0;}}
+  @keyframes ptDot{0%,70%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(.6);}}
+  .heart{width:30px;height:30px;color:#FF6B7E;margin:-15px 0 0 -15px;
+    animation:float var(--dur,2.2s) cubic-bezier(.25,.6,.35,1) forwards;}
+  .heart svg{width:100%;height:100%;fill:currentColor;filter:drop-shadow(0 4px 8px rgba(255,80,110,.45));}
+  @keyframes float{0%{opacity:0;transform:translate(0,0) scale(.4) rotate(0);}
+    12%{opacity:1;transform:translate(calc(var(--dx)*.2),-30px) scale(1.05) rotate(calc(var(--rot)*.3));}
+    100%{opacity:0;transform:translate(var(--dx),-260px) scale(.85) rotate(var(--rot));}}
+
+  /* ---- overlays: connecting, a break, the end ---- */
+  .veil{position:absolute;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;text-align:center;padding:32px;color:var(--cream);
+    background:radial-gradient(80% 60% at 50% 42%,rgba(20,26,28,.55),rgba(8,11,12,.92));
+    -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);}
+  .veil.on{display:flex;animation:veilIn .4s ease both;}
+  @keyframes veilIn{from{opacity:0;}to{opacity:1;}}
+  .veil h2{font-size:22px;font-weight:650;line-height:1.25;max-width:22ch;}
+  .veil p{font-size:13.5px;color:rgba(251,246,236,.65);line-height:1.55;max-width:30ch;}
+  .halo{position:relative;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;margin-bottom:6px;
+    background:radial-gradient(circle at 35% 30%,rgba(255,226,168,.35),rgba(232,163,61,.12) 60%,transparent 70%);}
+  .halo::before,.halo::after{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,212,138,.5);
+    animation:halo 2.4s ease-out infinite;}
+  .halo::after{animation-delay:1.2s;}
+  @keyframes halo{0%{transform:scale(.85);opacity:.9;}100%{transform:scale(1.6);opacity:0;}}
+  .halo .gav{width:76px;height:76px;font-size:30px;box-shadow:0 0 0 3px rgba(255,212,138,.6);}
+  .halo .ic{width:40px;height:40px;color:#FFD48A;}
+  .pillbtn{display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:999px;font-weight:700;font-size:15.5px;
+    text-decoration:none;color:#2A1804;background:radial-gradient(120% 140% at 30% 15%,#FFE2A8,#F0AE48 55%,#D2852A);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 16px 34px -14px rgba(232,163,61,.7);}
+  .pillbtn .ic{width:20px;height:20px;filter:none;}
+  .pillbtn.ghost{color:var(--cream);background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);}
+  .veil .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+  .veil .soft{font-size:12px;color:rgba(251,246,236,.45);}
+  .soundBtn{position:absolute;z-index:11;left:50%;top:44%;transform:translate(-50%,-50%);display:none;}
+  .soundBtn.on{display:inline-flex;animation:breathe 2.4s ease-in-out infinite;}
+
+  /* ---- small things ---- */
+  .toast{position:absolute;left:50%;transform:translateX(-50%);top:calc(66px + env(safe-area-inset-top));z-index:14;
+    padding:9px 16px;border-radius:999px;font-size:13px;color:var(--cream);text-align:center;max-width:86vw;display:none;
+    background:rgba(16,20,22,.6);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);}
+  .toast.on{display:block;animation:bubIn .4s var(--spring);}
+
+  /* ---- sheets: chat, and "leave?" ---- */
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom);border-radius:28px 28px 0 0;color:var(--cream);
+    background:linear-gradient(180deg,rgba(28,34,36,.86),rgba(14,18,20,.94));
+    -webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);
+    box-shadow:0 -20px 50px -20px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.12);
+    transform:translateY(105%);transition:transform .42s var(--spring);}
+  .sheet.on{transform:none;}
+  .grab{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:10px auto 4px;}
+  .chatPanel{max-height:72%;}
+  .chatBody{flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
+  .msg{max-width:80%;font-size:14.5px;line-height:1.45;padding:10px 14px;border-radius:18px;word-break:break-word;}
+  .msg.them{background:rgba(255,255,255,.09);align-self:flex-start;border-bottom-left-radius:6px;}
+  .msg.me{background:linear-gradient(135deg,#FFE2A8,#F0AE48);color:#2A1804;align-self:flex-end;border-bottom-right-radius:6px;font-weight:500;}
+  .msg .t{display:block;font-size:10px;opacity:.5;margin-top:3px;}
+  .chatEmpty{text-align:center;color:rgba(251,246,236,.4);font-size:13px;line-height:1.6;padding:20px 10px;}
+  .quick{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 2px;scrollbar-width:none;}
+  .quick::-webkit-scrollbar{display:none;}
+  .quick button{flex:none;padding:9px 14px;border-radius:999px;font-size:13px;color:var(--cream);
+    background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}
+  .quick button:active{background:rgba(255,226,168,.25);}
+  .chatFoot{display:flex;gap:8px;align-items:center;padding:10px 12px 12px;}
+  .chatFoot input{flex:1;min-width:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:999px;
+    padding:13px 18px;color:var(--cream);font-size:16px;}
+  .chatFoot input:focus{outline:none;border-color:rgba(255,212,138,.7);}
+  .chatFoot .orb{width:46px;height:46px;}
+  .confirm{padding:8px 20px 22px;text-align:center;gap:6px;}
+  .confirm h3{font-size:19px;font-weight:650;margin-top:6px;}
+  .confirm p{font-size:13.5px;color:rgba(251,246,236,.6);margin-bottom:12px;}
+  .confirm .row{display:flex;gap:10px;}
+  .confirm .row button{flex:1;padding:15px;border-radius:16px;font-weight:700;font-size:15px;}
+  .confirm .stay{color:#2A1804;background:linear-gradient(135deg,#FFE2A8,#F0AE48);}
+  .confirm .go{color:var(--cream);background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
@@ -193,76 +309,103 @@
 <div id="live">
   <canvas id="remoteBg" width="24" height="42" aria-hidden="true"></canvas>
   <video id="remoteVideo" playsinline autoplay></video>
+  <div class="vignette"></div>
 
-  <div class="breakOverlay" id="breakBox">
-    <i class="ti ti-coffee"></i>
-    <h2>They're taking a short break</h2>
-    <p>The camera is off for a moment. You keep your place, and you are not
-       being charged while it is paused.</p>
+  <!-- who you're with -->
+  <div class="gchip chrome top-chrome" id="gChip">
+    <span class="gav" id="chipAv"></span>
+    <span class="t"><b id="chipName">Your guide</b><span><i class="rec"></i><span id="tTime">00:00</span>
+      <span class="bars" id="bars" title="Signal"><i></i><i></i><i></i></span></span></span>
+  </div>
+  <button class="orb sm chrome top-chrome" id="cClose" type="button" aria-label="Leave the walk">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+
+  <div class="feed" id="feed" aria-live="polite"></div>
+
+  <!-- heart, chat, mic -->
+  <div class="rail chrome low-chrome">
+    <button class="orb" id="cHeart" type="button" aria-label="Send a heart">
+      <svg class="ic fill" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 2.9c0 5.8-7.5 10.4-7.5 10.4Z"/></svg></button>
+    <button class="orb" id="cChat" type="button" aria-label="Chat">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4.5 19.5l1.4-4.2A7.5 7.5 0 1 1 20 11.5Z"/></svg>
+      <span class="dot" id="chatBadge">0</span></button>
+    <button class="orb" id="cMic" type="button" aria-label="Mute your microphone">
+      <svg class="ic" viewBox="0 0 24 24" id="micIc"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg></button>
   </div>
 
-  <div class="endedOverlay" id="endedBox">
-    <i class="ti ti-flag"></i>
-    <h2 id="endedTxt">The walk has ended.</h2>
-    <p>Taking you <span id="endedWhere">back to the map</span> in <b id="endedCount">5</b>…</p>
-    <a class="endedBtn" id="endedRate" href="explore.html" style="display:none"><i class="ti ti-star"></i>Rate your walk</a>
-    <a class="endedBtn" id="endedMap" href="explore.html"><i class="ti ti-map"></i>Back to the map now</a>
-  </div>
-
-  <div class="waiting" id="waitBox">
-    <div class="spinner"></div>
-    <p id="waitTxt">Connecting…</p>
-    <p class="sub" id="waitSub"></p>
-  </div>
-
-  <div class="top">
-    <div class="livedot"><i></i><span>LIVE IN BANGKOK</span></div>
-    <div class="pill">WATCHING<b class="mono" id="tTime">00:00</b></div>
-    <div class="pill">QUALITY<b class="mono" id="tQual">—</b></div>
+  <!-- steer them -->
+  <div class="dock chrome low-chrome" id="dock">
+    <button class="orb" data-dir="Turn around" data-ic="around" type="button" aria-label="Turn around">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M8 20V10a4 4 0 0 1 8 0v5"/><path d="m12.5 11.5 3.5 3.5 3.5-3.5"/></svg><span class="lab">Around</span></button>
+    <button class="orb" data-dir="Turn left" data-ic="left" type="button" aria-label="Turn left">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M16 20v-6.5A4.5 4.5 0 0 0 11.5 9H5"/><path d="M9 5 5 9l4 4"/></svg><span class="lab">Left</span></button>
+    <button class="orb big" data-dir="Get closer" data-ic="closer" type="button" aria-label="Get closer">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 20V5"/><path d="m6 11 6-6 6 6"/></svg><span class="lab">Closer</span></button>
+    <button class="orb" data-dir="Turn right" data-ic="right" type="button" aria-label="Turn right">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M8 20v-6.5A4.5 4.5 0 0 1 12.5 9H19"/><path d="m15 5 4 4-4 4"/></svg><span class="lab">Right</span></button>
+    <button class="orb" data-dir="Stay here" data-ic="stay" type="button" aria-label="Stay here">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.7-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.3 12 21 12 21Z"/><circle cx="12" cy="9.8" r="2.3"/></svg><span class="lab">Stay</span></button>
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="sent" id="sentBox"></div>
-  <button class="soundBtn" id="soundBtn" type="button"><i class="ti ti-volume"></i>Tap to hear your guide</button>
 
-  <div class="bottom">
-    <div class="presets">
-      <button class="preset">Get closer</button>
-      <button class="preset">Turn around</button>
-      <button class="preset">Look up</button>
-      <button class="preset">Stay here</button>
-      <button class="preset">What is that?</button>
-      <button class="preset">Slow down</button>
+  <button class="pillbtn soundBtn" id="soundBtn" type="button">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.2 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+    Tap for sound</button>
+
+  <!-- connecting / reconnecting -->
+  <div class="veil on" id="waitBox">
+    <div class="halo"><span class="gav" id="waitAv"></span></div>
+    <h2 id="waitTxt">Connecting…</h2>
+    <p id="waitSub"></p>
+  </div>
+
+  <!-- a break, not an end -->
+  <div class="veil" id="breakBox">
+    <div class="halo"><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 9h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9Z"/><path d="M16.5 10.5h1.5a2.5 2.5 0 0 1 0 5h-1.5"/><path d="M8 3.5c0 1 .8 1.3.8 2.3M11.5 3.5c0 1 .8 1.3.8 2.3"/></svg></div>
+    <h2>Short break</h2>
+    <p>The camera’s off for a moment. You keep your place, and you’re not charged.</p>
+  </div>
+
+  <!-- the end -->
+  <div class="veil" id="endedBox">
+    <div class="halo"><span class="gav" id="endAv"></span></div>
+    <h2 id="endedTxt">The walk has ended</h2>
+    <div class="row">
+      <a class="pillbtn" id="endedRate" href="explore.html" style="display:none">
+        <svg class="ic" viewBox="0 0 24 24"><path d="m12 3.8 2.5 5.1 5.6.8-4.1 4 1 5.6-5-2.7-5 2.7 1-5.6-4.1-4 5.6-.8z"/></svg>Rate your walk</a>
+      <a class="pillbtn ghost" id="endedMap" href="explore.html">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M9 5 3.5 7v12L9 17l6 2 5.5-2V5L15 7 9 5Z"/><path d="M9 5v12M15 7v12"/></svg>Map</a>
     </div>
-    <div class="composer">
-      <input id="msgIn" placeholder="Tell them where to go…" autocomplete="off">
-      <button id="msgSend">Send</button>
+    <p class="soft">Moving on in <b id="endedCount">8</b></p>
+  </div>
+
+  <!-- chat -->
+  <div class="sheet chatPanel" id="chatPanel" role="dialog" aria-label="Chat">
+    <div class="grab" id="chatClose" role="button" aria-label="Close chat" tabindex="0"></div>
+    <div class="chatBody" id="chatBody">
+      <div class="chatEmpty">Too loud where they are? Type it.</div>
     </div>
-    <div class="ctrls">
-      <button class="ctrl" id="cMic" aria-label="Mute microphone">
-        <i class="ti ti-microphone" id="cMicIcon"></i><span id="cMicLabel">Mute</span>
-      </button>
-      <button class="ctrl" id="cChat" aria-label="Chat">
-        <i class="ti ti-message-circle"></i><span>Chat</span>
-        <span class="badge" id="chatBadge">0</span>
-      </button>
-      <button class="ctrl leave" id="cLeave" aria-label="Leave the walk">
-        <i class="ti ti-logout"></i><span>Leave</span>
-      </button>
+    <div class="quick" id="quick">
+      <button type="button">Look up</button><button type="button">Slow down</button>
+      <button type="button">What’s that?</button><button type="button">Can you hear me?</button>
+      <button type="button">Go inside</button><button type="button">Wow</button>
+    </div>
+    <div class="chatFoot">
+      <input id="chatIn" placeholder="Say something…" autocomplete="off" enterkeyhint="send">
+      <button class="orb big" id="chatSend" type="button" aria-label="Send">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5 21 3Z"/></svg></button>
     </div>
   </div>
 
-  <div class="chatPanel" id="chatPanel">
-    <div class="chatHead">
-      <h3>Chat</h3>
-      <button id="chatClose" aria-label="Close chat">&times;</button>
-    </div>
-    <div class="chatBody" id="chatBody">
-      <div class="chatEmpty">Say hello. Use this when it's too loud on their end to hear you.</div>
-    </div>
-    <div class="chatFoot">
-      <input id="chatIn" placeholder="Type a message…" autocomplete="off">
-      <button id="chatSend">Send</button>
+  <!-- leave? -->
+  <div class="sheet confirm" id="leaveSheet" role="dialog" aria-label="Leave the walk?">
+    <div class="grab"></div>
+    <h3>Leave the walk?</h3>
+    <p id="leaveSub">You won’t be able to come back to this one.</p>
+    <div class="row">
+      <button class="stay" id="leaveNo" type="button">Keep watching</button>
+      <button class="go" id="cLeave" type="button">Leave</button>
     </div>
   </div>
 </div>
@@ -485,12 +628,10 @@ async function join(){
     await room.connect(data.url,data.token);
     joined=true;
     try{ await room.localParticipant.setMicrophoneEnabled(true); }
-    catch{ toast('No microphone — you can still type directions'); }
+    catch{ micOn=false; paintMic(); toast('No microphone — use the chat instead'); }
 
     $('lobby').style.display='none';
-    $('live').classList.add('on');
-    $('waitTxt').textContent='Connected.';
-    $('waitSub').textContent='Waiting for their camera…';
+    enterLive();
     timerInt=setInterval(()=>{ secs++; $('tTime').textContent=fmt(secs); },1000);
 
     // Tell the server we are still here. Stop, and after a short while the
@@ -503,6 +644,172 @@ async function join(){
     $('btnJoin').disabled=false; $('btnJoin').textContent='Join the walk';
     schedule();
   }
+}
+
+/* =====================================================================
+   The walk, as the traveller sees it
+   ===================================================================== */
+
+const ICON={
+  around:'<path d="M8 20V10a4 4 0 0 1 8 0v5"/><path d="m12.5 11.5 3.5 3.5 3.5-3.5"/>',
+  left:'<path d="M16 20v-6.5A4.5 4.5 0 0 0 11.5 9H5"/><path d="M9 5 5 9l4 4"/>',
+  closer:'<path d="M12 20V5"/><path d="m6 11 6-6 6 6"/>',
+  right:'<path d="M8 20v-6.5A4.5 4.5 0 0 1 12.5 9H19"/><path d="m15 5 4 4-4 4"/>',
+  stay:'<path d="M12 21s-6.5-5.7-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.3 12 21 12 21Z"/><circle cx="12" cy="9.8" r="2.3"/>',
+  what:'<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 16.8v.1"/>',
+  spark:'<path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9z"/><path d="M18.5 16.5l.6 2 2 .6-2 .6-.6 2-.6-2-2-.6 2-.6z"/>',
+  heart:'<path d="M12 20.5s-7.5-4.6-7.5-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 2.9c0 5.8-7.5 10.4-7.5 10.4Z"/>',
+  mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
+  micOff:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/><path d="M4 4l16 16"/>'
+};
+const svg=(k,cls='ic')=>'<svg class="'+cls+'" viewBox="0 0 24 24">'+ICON[k]+'</svg>';
+
+/* the guide's face, wherever it appears */
+function face(el){
+  const g=GUIDE||{}, hue=g.hue==null?150:g.hue;
+  el.style.background='linear-gradient(140deg,hsl('+hue+',62%,68%),hsl('+((hue+34)%360)+',52%,42%))';
+  el.innerHTML=esc(firstName(g.name).slice(0,1).toUpperCase())+
+    (g.avatar?'<img src="'+esc(API_ROOT+g.avatar)+'" alt="" onerror="this.remove()">':'');
+}
+
+function enterLive(){
+  const n=firstName(GUIDE&&GUIDE.name);
+  ['chipAv','waitAv','endAv'].forEach(id=>face($(id)));
+  $('chipName').textContent=n;
+  $('waitTxt').textContent=n+' is getting the camera ready';
+  $('waitSub').textContent='';
+  $('leaveSub').textContent='You won’t be able to come back to this walk with '+n+'.';
+  $('live').classList.add('on');
+  timerInt=setInterval(()=>{ secs++; $('tTime').textContent=fmt(secs); },1000);
+  wake();
+}
+
+/* ---- calm: the controls step back when nobody is touching the screen ---- */
+let calmT=null;
+function wake(){
+  $('live').classList.remove('calm');
+  clearTimeout(calmT);
+  calmT=setTimeout(()=>{
+    // Never while something needs the controls.
+    if(chatOpen||$('leaveSheet').classList.contains('on')||!$('waitBox').classList.contains('hide')) return wake();
+    $('live').classList.add('calm');
+  },5500);
+}
+$('live').addEventListener('pointerdown',e=>{
+  // A tap on a hidden control only brings the controls back; it does not press it.
+  if($('live').classList.contains('calm')&&e.target.closest('.chrome')) e.preventDefault();
+  wake();
+},true);
+
+/* ---- feed: soft bubbles over the picture ---- */
+function bubble(html,{hint=false,ms=6000,onTap}={}){
+  const b=document.createElement('div');
+  b.className='bub'+(hint?' hint':'');
+  b.innerHTML=html;
+  if(onTap) b.addEventListener('click',onTap);
+  const feed=$('feed');
+  feed.appendChild(b);
+  while(feed.children.length>3) feed.firstChild.remove();
+  setTimeout(()=>{ b.classList.add('out'); setTimeout(()=>b.remove(),650); },ms);
+}
+function guideSays(text){
+  const mini=document.createElement('span'); mini.className='mini'; face(mini);
+  bubble(mini.outerHTML+'<span>'+esc(text)+'</span>',{onTap:openChat});
+}
+
+/* ---- steering ---- */
+function sendDirection(text,extra){
+  if(!text||!room) return;
+  room.localParticipant.publishData(enc.encode(JSON.stringify(Object.assign({type:'direction',text},extra||{}))),{reliable:true});
+  if(navigator.vibrate){ try{ navigator.vibrate(14); }catch{} }
+}
+function floatCap(x,y,icon,text){
+  const f=document.createElement('div');
+  f.className='fx'; f.style.left=x+'px'; f.style.top=y+'px';
+  f.innerHTML='<div class="cap">'+svg(icon)+esc(text)+'</div>';
+  $('live').appendChild(f);
+  setTimeout(()=>f.remove(),1600);
+}
+document.querySelectorAll('#dock .orb').forEach(b=>b.addEventListener('click',()=>{
+  sendDirection(b.dataset.dir);
+  b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping');
+  const r=b.getBoundingClientRect(), L=$('live').getBoundingClientRect();
+  floatCap(r.left-L.left+r.width/2, r.top-L.top-46, b.dataset.ic, b.dataset.dir);
+}));
+
+/* ---- point at something: double-tap the picture ----
+   The spot travels as a fraction of the actual frame, so the guide's screen
+   can mark the same place however each side crops or zooms. */
+let lastTap=0;
+$('remoteVideo').addEventListener('pointerup',e=>{
+  const now=Date.now();
+  if(now-lastTap<320){ lastTap=0; pointAt(e.clientX,e.clientY); }
+  else lastTap=now;
+});
+function frameRect(){
+  const v=$('remoteVideo'), r=v.getBoundingClientRect();
+  if(!v.videoWidth) return null;
+  const s=Math.min(r.width/v.videoWidth, r.height/v.videoHeight);
+  const w=v.videoWidth*s, h=v.videoHeight*s;
+  return { left:r.left+(r.width-w)/2, top:r.top+(r.height-h)/2, width:w, height:h };
+}
+function pointAt(cx,cy){
+  const fr=frameRect(); if(!fr) return;
+  const x=(cx-fr.left)/fr.width, y=(cy-fr.top)/fr.height;
+  if(x<0||x>1||y<0||y>1) return;
+  const L=$('live').getBoundingClientRect();
+  const p=document.createElement('div');
+  p.className='fx pt'; p.style.left=(cx-L.left)+'px'; p.style.top=(cy-L.top)+'px';
+  p.innerHTML='<i></i><i></i><b></b>';
+  $('live').appendChild(p);
+  setTimeout(()=>p.remove(),1700);
+  floatCap(cx-L.left, cy-L.top-74, 'what', 'What’s that?');
+  sendDirection('What’s that?',{point:{x:Math.round(x*1000)/1000,y:Math.round(y*1000)/1000}});
+  learn();
+}
+
+/* ---- hearts ---- */
+let heartsQueued=0, heartT=null;
+$('cHeart').addEventListener('click',()=>{
+  const b=$('cHeart'), r=b.getBoundingClientRect(), L=$('live').getBoundingClientRect();
+  for(let i=0;i<2;i++) setTimeout(()=>spawnHeart(r.left-L.left+r.width/2, r.top-L.top+8),i*90);
+  b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping');
+  if(navigator.vibrate){ try{ navigator.vibrate(8); }catch{} }
+  // Many taps, one message: a burst is sent as a count, not a flood.
+  heartsQueued++;
+  if(!heartT) heartT=setTimeout(()=>{
+    try{ room&&room.localParticipant.publishData(enc.encode(JSON.stringify({type:'reaction',kind:'heart',n:heartsQueued})),{reliable:false}); }catch{}
+    heartsQueued=0; heartT=null;
+  },350);
+});
+function spawnHeart(x,y){
+  const h=document.createElement('div');
+  h.className='fx heart';
+  h.style.left=x+'px'; h.style.top=y+'px';
+  h.style.setProperty('--dx',(Math.random()*90-60)+'px');
+  h.style.setProperty('--rot',(Math.random()*50-25)+'deg');
+  h.style.setProperty('--dur',(1.8+Math.random()*.9)+'s');
+  h.style.color=['#FF6B7E','#FF8A65','#FFB3C1','#FF5A7A'][Math.floor(Math.random()*4)];
+  h.innerHTML=svg('heart','');
+  $('live').appendChild(h);
+  setTimeout(()=>h.remove(),2900);
+}
+
+/* ---- teach the icons once, then let them be icons ---- */
+let learnT=null;
+function learn(){ $('live').classList.add('learned'); clearTimeout(learnT); }
+function teach(){
+  bubble(svg('spark')+'<span>Tap an arrow to steer. Double-tap anything to ask what it is.</span>',{hint:true,ms:7000});
+  learnT=setTimeout(learn,9000);
+}
+
+/* What the traveller is actually receiving, on the signal bars' tooltip. */
+function watchResolution(){
+  const v=$('remoteVideo');
+  const show=()=>{ if(v.videoWidth) $('bars').title='Receiving '+Math.min(v.videoWidth,v.videoHeight)+'p'; };
+  v.addEventListener('resize',show);
+  v.addEventListener('loadedmetadata',show);
+  show();
 }
 
 /* Ask for the publisher's top simulcast layer. With adaptiveStream off this is
@@ -523,24 +830,6 @@ function askForBestQuality(){
   }catch(e){ /* older client, defaults are fine */ }
 }
 
-/* What the traveller is actually receiving. Without this, "the video looks bad"
-   is unfalsifiable - this makes it a number. */
-function watchResolution(){
-  const v=$('remoteVideo'), pill=$('tQual');
-  if(!v||!pill) return;
-  const show=()=>{
-    if(!v.videoWidth) return;
-    // A phone films portrait: 540x960 is "540p", not "960p".
-    pill.textContent=Math.min(v.videoWidth,v.videoHeight)+'p';
-    pill.title=v.videoWidth+'x'+v.videoHeight;
-  };
-  v.addEventListener('resize',show);
-  v.addEventListener('loadedmetadata',show);
-  clearInterval(watchResolution._t);
-  watchResolution._t=setInterval(show,3000);
-  show();
-}
-
 /* The guide ending the walk should return the traveller to the map, not leave
    them staring at a dead room or reload them into a lobby they cannot re-enter
    — the walk code no longer admits them once the session is over. */
@@ -553,17 +842,15 @@ let guideId=null;
 function leaveToMenu(why){
   if(leaving) return;
   leaving=true;
-  clearInterval(timerInt); clearInterval(hereT);
+  clearInterval(timerInt); clearInterval(hereT); clearTimeout(calmT);
   try{ if(room) room.disconnect(); }catch{}
-  $('endedTxt').textContent=why||'The walk has ended.';
+  closeSheets();
+  $('live').classList.remove('calm');
+  $('waitBox').classList.remove('on'); $('waitBox').classList.add('hide');
+  $('endedTxt').textContent=why||'The walk has ended';
   $('endedBox').classList.add('on');
   const target=guideId ? 'guide.html?id='+encodeURIComponent(guideId)+'#review' : 'explore.html';
-  if(guideId){
-    $('endedRate').href=target;
-    $('endedRate').style.display='';
-    $('endedMap').classList.add('ghost');
-    $('endedWhere').textContent='to rate it';
-  }
+  if(guideId){ $('endedRate').href=target; $('endedRate').style.display=''; }
   let n=guideId?8:5;
   const tick=()=>{
     $('endedCount').textContent=n;
@@ -575,8 +862,13 @@ function leaveToMenu(why){
 
 /* A break is not a frozen stream. Saying so is the difference between waiting
    and thinking it broke. */
-function showBreak(on){
-  $('breakBox').classList.toggle('on',!!on);
+function showBreak(on){ $('breakBox').classList.toggle('on',!!on); }
+
+function setWaiting(on,title,sub){
+  $('waitBox').classList.toggle('on',on);
+  $('waitBox').classList.toggle('hide',!on);
+  if(title) $('waitTxt').textContent=title;
+  $('waitSub').textContent=sub||'';
 }
 
 function wire(){
@@ -585,22 +877,23 @@ function wire(){
       if(track.kind==='video'){
         track.attach($('remoteVideo'));
         startBackdrop();
-        $('waitBox').classList.add('hide');
-        toast('You can see them — try tapping a direction');
+        setWaiting(false);
         askForBestQuality();
         watchResolution();
+        if(!wire.taught){ wire.taught=true; setTimeout(teach,900); }
+        wake();
       }
       if(track.kind==='audio'){ const el=track.attach(); el.style.display='none'; document.body.appendChild(el); }
     })
     .on(LK.RoomEvent.ParticipantDisconnected,()=>{
       // A walk is one guide and one traveller, so the only other person in the
       // room is the guide. If they are gone, the walk is over.
-      leaveToMenu('Your guide ended the walk.');
+      leaveToMenu(firstName(GUIDE&&GUIDE.name)+' ended the walk');
     })
     .on(LK.RoomEvent.DataReceived,(payload,p)=>{
       try{
         const m=JSON.parse(dec.decode(payload));
-        if(m.type==='chat'){ addChat(m.text,'them'); if(!chatOpen) toast('💬 '+m.text,4500); }
+        if(m.type==='chat'){ addChat(m.text,'them'); if(!chatOpen) guideSays(m.text); }
         if(m.type==='paused') showBreak(true);
         if(m.type==='resumed') showBreak(false);
         if(m.type==='zoom') setZoom(m.z);
@@ -610,17 +903,17 @@ function wire(){
       // Say whose signal it is. "The video is bad" with no reason reads as
       // the app being broken; "their signal is weak on this street" does not.
       const poor=q===LK.ConnectionQuality.Poor||q===LK.ConnectionQuality.Lost;
-      if(p&&p.isLocal){ myPoor=poor; if(poor) noteSignal('Your connection is weak — the picture may stutter.'); }
-      else { guidePoor=poor; if(poor) noteSignal('Their signal is weak here — the picture will soften until it recovers.'); }
-      $('tQual').classList.toggle('weak',myPoor||guidePoor);
+      if(p&&p.isLocal){ myPoor=poor; if(poor) noteSignal('Your connection is weak'); }
+      else { guidePoor=poor; if(poor) noteSignal('Their signal is weak here — hang on'); }
+      $('bars').classList.toggle('weak',myPoor||guidePoor);
     })
     .on(LK.RoomEvent.AudioPlaybackStatusChanged,()=>{
       // Some browsers will not play the guide's voice until the page is tapped.
       $('soundBtn').classList.toggle('on',!room.canPlaybackAudio);
     })
-    .on(LK.RoomEvent.Reconnecting,()=>{ $('waitTxt').textContent='Reconnecting…'; $('waitSub').textContent=''; $('waitBox').classList.remove('hide'); })
-    .on(LK.RoomEvent.Reconnected,()=>{ $('waitBox').classList.add('hide'); toast('Back online'); })
-    .on(LK.RoomEvent.Disconnected,()=>{ leaveToMenu('The walk has ended.'); });
+    .on(LK.RoomEvent.Reconnecting,()=>{ setWaiting(true,'Reconnecting…'); })
+    .on(LK.RoomEvent.Reconnected,()=>{ setWaiting(false); toast('Back'); })
+    .on(LK.RoomEvent.Disconnected,()=>{ leaveToMenu('The walk has ended'); });
 }
 
 /* ---- signal notes, at most one a minute ---- */
@@ -628,7 +921,7 @@ let myPoor=false, guidePoor=false, lastSignalNote=0;
 function noteSignal(msg){
   if(Date.now()-lastSignalNote<60000) return;
   lastSignalNote=Date.now();
-  toast(msg,5000);
+  toast(msg,4000);
 }
 
 /* ---- sound ---- */
@@ -658,28 +951,22 @@ function startBackdrop(){
   },1000);
 }
 
-function send(text){
-  if(!text.trim()||!room) return;
-  room.localParticipant.publishData(enc.encode(JSON.stringify({type:'direction',text:text.trim()})),{reliable:true});
-  $('sentBox').textContent='Sent: '+text.trim();
-  $('sentBox').classList.add('on');
-  clearTimeout(send._t); send._t=setTimeout(()=>$('sentBox').classList.remove('on'),2600);
-  if(navigator.vibrate) navigator.vibrate(18);
+/* ---- mic ---- */
+function paintMic(){
+  $('micIc').innerHTML=ICON[micOn?'mic':'micOff'];
+  $('cMic').classList.toggle('off',!micOn);
+  $('cMic').setAttribute('aria-label',micOn?'Mute your microphone':'Unmute your microphone');
 }
-document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>send(b.textContent)));
-$('msgSend').addEventListener('click',()=>{ send($('msgIn').value); $('msgIn').value=''; });
-$('msgIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ send($('msgIn').value); $('msgIn').value=''; } });
-
 $('cMic').addEventListener('click',async()=>{
   micOn=!micOn;
-  await room.localParticipant.setMicrophoneEnabled(micOn);
-  $('cMicLabel').textContent=micOn?'Mute':'Unmute';
-  $('cMicIcon').className='ti '+(micOn?'ti-microphone':'ti-microphone-off');
-  $('cMic').classList.toggle('off',!micOn);
+  paintMic();
+  try{ await room.localParticipant.setMicrophoneEnabled(micOn); }catch{}
+  toast(micOn?'They can hear you':'Muted');
 });
+
 /* ---- chat ---- */
 let unread=0, chatOpen=false;
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeHtml(s){ return esc(s); }
 const hhmm=()=>new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 function addChat(text,who){
   const body=$('chatBody');
@@ -696,28 +983,39 @@ function sendChat(text){
   room.localParticipant.publishData(enc.encode(JSON.stringify({type:'chat',text:text.trim()})),{reliable:true});
   addChat(text.trim(),'me');
 }
-$('cChat').addEventListener('click',()=>{
-  chatOpen=true;
-  $('chatPanel').classList.add('on');
-  document.querySelector('.bottom').classList.add('hide');
-  unread=0; $('chatBadge').classList.remove('on');
-  $('chatBody').scrollTop=$('chatBody').scrollHeight;
-});
-$('chatClose').addEventListener('click',()=>{
+function closeSheets(){
   chatOpen=false;
   $('chatPanel').classList.remove('on');
-  document.querySelector('.bottom').classList.remove('hide');
-});
+  $('leaveSheet').classList.remove('on');
+}
+function openChat(){
+  closeSheets();
+  chatOpen=true;
+  $('chatPanel').classList.add('on');
+  unread=0; $('chatBadge').classList.remove('on');
+  $('chatBody').scrollTop=$('chatBody').scrollHeight;
+  wake();
+}
+$('cChat').addEventListener('click',openChat);
+$('chatClose').addEventListener('click',()=>{ closeSheets(); wake(); });
 $('chatSend').addEventListener('click',()=>{ sendChat($('chatIn').value); $('chatIn').value=''; });
 $('chatIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendChat($('chatIn').value); $('chatIn').value=''; } });
+$('quick').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>sendChat(b.textContent)));
+// Tapping the picture closes an open sheet.
+$('remoteVideo').addEventListener('click',()=>{ if(chatOpen||$('leaveSheet').classList.contains('on')) closeSheets(); });
 
-// Leaving closes your part of the walk straight away, so the guide can take
-// the next traveller without stopping.
+/* ---- leaving ----
+   Asked first: the close button sits where thumbs rest, and a walk cannot be
+   rejoined. Leaving closes your part straight away, so the guide can take
+   the next traveller without stopping. */
+$('cClose').addEventListener('click',()=>{ closeSheets(); $('leaveSheet').classList.add('on'); wake(); });
+$('leaveNo').addEventListener('click',()=>{ closeSheets(); wake(); });
 $('cLeave').addEventListener('click',()=>{
   clearInterval(hereT);
   api('POST','/api/bookings/'+encodeURIComponent(BOOKING)+'/leave').catch(()=>{});
-  leaveToMenu('You left the walk.');
+  leaveToMenu('You left the walk');
 });
 </script>
 </body>
 </html>
+

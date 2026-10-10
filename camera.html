@@ -168,6 +168,21 @@
 
   .prompt{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:7;background:rgba(232,163,61,.96);color:var(--ink);border-radius:18px;padding:20px 22px;max-width:min(290px,76vw);text-align:center;box-shadow:0 22px 50px -14px rgba(0,0,0,.7);display:none;}
   .prompt.on{display:block;animation:pop .28s ease-out;}
+
+  /* where the traveller is pointing */
+  .spot{position:absolute;z-index:7;width:0;height:0;pointer-events:none;}
+  .spot i{position:absolute;left:-26px;top:-26px;width:52px;height:52px;border-radius:50%;border:3px solid #FFE2A8;
+    box-shadow:0 0 20px rgba(255,212,138,.7);animation:spotRing 1.4s ease-out 3;}
+  .spot i:nth-child(2){animation-delay:.25s;}
+  .spot b{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:#FFE2A8;
+    box-shadow:0 0 14px rgba(255,212,138,.95);animation:spotDot 4.2s ease forwards;}
+  @keyframes spotRing{0%{transform:scale(.3);opacity:1;}100%{transform:scale(2.1);opacity:0;}}
+  @keyframes spotDot{0%,85%{opacity:1;}100%{opacity:0;}}
+  .lheart{position:absolute;z-index:7;right:70px;bottom:calc(150px + env(safe-area-inset-bottom));width:30px;height:30px;
+    pointer-events:none;animation:lheart 2.4s cubic-bezier(.25,.6,.35,1) forwards;}
+  .lheart svg{width:100%;height:100%;fill:currentColor;filter:drop-shadow(0 4px 8px rgba(255,80,110,.45));}
+  @keyframes lheart{0%{opacity:0;transform:scale(.4);}12%{opacity:1;transform:translate(calc(var(--dx)*.2),-24px) scale(1.05);}
+    100%{opacity:0;transform:translate(var(--dx),-220px) scale(.85) rotate(var(--rot));}}
   @keyframes pop{from{transform:translate(-50%,-50%) scale(.93);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
   .prompt .who{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.65;margin-bottom:6px;}
   .prompt .what{font-size:18px;font-weight:700;line-height:1.35;}
@@ -1025,7 +1040,8 @@ function wire(){
       try{
         const m=JSON.parse(dec.decode(payload));
         const who=p?.name||'Traveler';
-        if(m.type==='direction'){ showPrompt(m.text,who); addChat(m.text,'them',true); }
+        if(m.type==='direction'){ showPrompt(m.text,who); addChat(m.text,'them',true); if(m.point) markPoint(m.point); }
+        else if(m.type==='reaction'){ floatHearts(Math.min(8,Number(m.n)||1)); }
         else if(m.type==='chat'){ addChat(m.text,'them'); if(!chatOpen) toast('💬 '+m.text,4000); }
       }catch{}
     })
@@ -1084,6 +1100,40 @@ function startSendWatch(){
   clearInterval(sendWatchT);
   sendWatchT=setInterval(watchSending,4000);
   setTimeout(watchSending,1500);
+}
+
+/* The traveller double-tapped something on their screen. The spot arrives as a
+   fraction of the camera frame; place it on this preview, which crops the
+   frame differently (cover, not contain) and may be mirrored or zoomed. */
+function markPoint(pt){
+  const v=$('localVideo');
+  if(!v.videoWidth||!(pt.x>=0&&pt.x<=1&&pt.y>=0&&pt.y<=1)) return;
+  const r=v.getBoundingClientRect();
+  const s=Math.max(r.width/v.videoWidth,r.height/v.videoHeight);
+  const w=v.videoWidth*s, h=v.videoHeight*s;
+  const x=usingFront?1-pt.x:pt.x;
+  // Cover can crop the spot off screen; keep the mark at the nearest edge.
+  const px=Math.min(innerWidth-34,Math.max(34,r.left+(r.width-w)/2+x*w));
+  const py=Math.min(innerHeight-34,Math.max(34,r.top+(r.height-h)/2+pt.y*h));
+  const m=document.createElement('div');
+  m.className='spot'; m.style.left=px+'px'; m.style.top=py+'px';
+  m.innerHTML='<i></i><i></i><b></b>';
+  $('live').appendChild(m);
+  setTimeout(()=>m.remove(),4300);
+}
+
+/* Hearts from the traveller float up the side. Silent: the mic is live. */
+function floatHearts(n){
+  for(let i=0;i<n;i++) setTimeout(()=>{
+    const h=document.createElement('div');
+    h.className='lheart';
+    h.style.setProperty('--dx',(Math.random()*60-40)+'px');
+    h.style.setProperty('--rot',(Math.random()*40-20)+'deg');
+    h.style.color=['#FF6B7E','#FF8A65','#FFB3C1'][i%3];
+    h.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.5 2.9c0 5.8-7.5 10.4-7.5 10.4Z"/></svg>';
+    $('live').appendChild(h);
+    setTimeout(()=>h.remove(),2600);
+  },i*120);
 }
 
 function showPrompt(text,who){
